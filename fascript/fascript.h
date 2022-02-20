@@ -8,6 +8,7 @@
 #include <format>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -78,17 +79,10 @@ public:
 	Value (const Value &_o): m_value (_o.m_value) {}
 	Value &operator= (const Value &_o) { m_value = _o.m_value; }
 
-	template<AllowedCppType T1, AllowedCppType ...Args>
-	Value Invoke (T1 _t, Args ...args) {
-		Function &_func = _get_func_check_arg (sizeof... (args) + 1);
-		_push_args (_t, args...);
-		return _func.Call ();
-	}
-
-	template<AllowedCppType T1>
-	Value Invoke (T1 _t) {
-		Function &_func = _get_func_check_arg (1);
-		_push_args (_t);
+	template<AllowedCppType ...Args>
+	Value Invoke (Args ...args) {
+		Function &_func = _get_func_check_arg (sizeof... (args));
+		_push_args (args...);
 		return _func.Call ();
 	}
 
@@ -181,10 +175,16 @@ private:
 
 class FAScript {
 public:
-	void RunCode () {}
+	void RunCode () {
+		// TODO 解析代码
 
-private:
-	std::vector<std::shared_ptr<Value>> m_exec_stack;
+		// TODO 编译代码
+
+		// TODO 执行代码
+
+		// 执行栈
+		auto _stack = std::make_shared<std::vector<Value>> ();
+	}
 };
 }
 
