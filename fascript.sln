@@ -5,6 +5,7 @@ VisualStudioVersion = 16.0.32126.315
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "doc", "doc", "{9BFCB85E-43F1-48A8-BC73-3F849C4D70CD}"
 	ProjectSection(SolutionItems) = preProject
+		grammar\FAScript.g4 = grammar\FAScript.g4
 		README.md = README.md
 	EndProjectSection
 EndProject

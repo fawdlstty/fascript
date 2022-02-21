@@ -18,7 +18,22 @@
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="fascript.h">
+    <ClInclude Include="fascript.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="common.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="exception.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="value.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="function.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="fasvisitor.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -27,6 +42,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="value.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="fasvisitor.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
