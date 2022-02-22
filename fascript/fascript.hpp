@@ -13,7 +13,10 @@ public:
 	bool RunCode (std::string _code);
 
 private:
-	std::map<std::string, Value> m_global_vars;
+	std::mutex m_mtx;
+	std::map<std::string, size_t> m_name_to_id;
+	std::map<size_t, Value> m_id_to_var;
+	size_t m_next_id;
 };
 }
 

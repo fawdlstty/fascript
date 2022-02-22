@@ -3,12 +3,19 @@
 
 
 
+#include "value.hpp"
+
+
+
 namespace fas {
 class Function {
 public:
 	std::string Name;
-	std::vector<std::string> Arguments;
+	size_t Id;
+	size_t ArgumentCount;
 	std::vector<uint8_t> Codes;
+
+	Value Call (std::vector<Value> &_stack);
 };
 }
 

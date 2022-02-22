@@ -9,20 +9,20 @@ static std::shared_ptr<Function> _get_func_check_arg (ValueData &m_value, size_t
 	if (m_value.index () != 4)
 		throw Exception { "failed access." };
 	auto _func = std::get<std::shared_ptr<Function>> (m_value);
-	if (_func->Arguments.size () != _arg_size)
-		throw Exception { std::format ("function {} need {} argument but input {} argument.", _func->Name, _func->Arguments.size (), _arg_size) };
+	if (_func->ArgumentCount != _arg_size)
+		throw Exception { std::format ("function {} need {} argument but input {} argument.", _func->Name, _func->ArgumentCount, _arg_size) };
 	return _func;
 }
 
 template<AllowedCppType T1, AllowedCppType ...Args>
-void _push_args (T1 _t, Args ...args) {
-	m_s->m_exec_stack.push_back (_t);
+static void _push_args (std::vector<Value> &_stack, T1 _t, Args ...args) {
+	_stack.push_back (_t);
 	_push_args (args...);
 }
 
 template<AllowedCppType T1>
-void _push_args (T1 _t) {
-	m_s->m_exec_stack.push_back (_t);
+static void _push_args (std::vector<Value> &_stack, T1 _t) {
+	_stack.push_back (_t);
 }
 
 
@@ -36,17 +36,17 @@ Value::Value (std::shared_ptr<FAScript> _s, std::map<MapKey, Value> _val): m_s (
 Value::Value (const Value &_o): m_s (_o.m_s), m_value (_o.m_value) {}
 Value &Value::operator= (const Value &_o) { m_s = _o.m_s; m_value = _o.m_value; }
 
-template<AllowedCppType ...Args>
-Value Value::Invoke (Args ...args) {
-	auto _func = _get_func_check_arg (m_value, sizeof... (args));
-	_push_args (args...);
-	//return _func.Call ();
-}
-
-Value Value::Invoke () {
-	auto _func = _get_func_check_arg (m_value, 0);
-	//return _func.Call ();
-}
+//template<AllowedCppType ...Args>
+//Value Value::Invoke (std::vector<Value> &_stack, Args ...args) {
+//	auto _func = _get_func_check_arg (m_value, sizeof... (args));
+//	_push_args (args...);
+//	return _func.Call ();
+//}
+//
+//Value Value::Invoke (std::vector<Value> &_stack) {
+//	auto _func = _get_func_check_arg (m_value, 0);
+//	//return _func.Call ();
+//}
 
 Value &Value::operator[] (int64_t _val) {
 	if (m_value.index () == 5) {

@@ -20,9 +20,9 @@ public:
 	Value (const Value &_o);
 	Value &operator= (const Value &_o);
 
-	template<AllowedCppType ...Args>
-	Value Invoke (Args ...args);
-	Value Invoke ();
+	//template<AllowedCppType ...Args>
+	//Value Invoke (std::vector<Value> &_stack, Args ...args);
+	//Value Invoke (std::vector<Value> &_stack);
 
 	Value &operator[] (int64_t _val);
 	Value &operator[] (std::string _val);

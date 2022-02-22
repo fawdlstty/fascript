@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="头文件\ASTs">
+      <UniqueIdentifier>{8febd2b5-be7d-4b6d-9ba9-c1ce061e3e06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\ASTs">
+      <UniqueIdentifier>{2c666f6d-de36-48b5-94ed-b932136e1020}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -36,6 +42,21 @@
     <ClInclude Include="fasvisitor.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ASTs\IAstExpr.hpp">
+      <Filter>头文件\ASTs</Filter>
+    </ClInclude>
+    <ClInclude Include="ASTs\AstOp2.hpp">
+      <Filter>头文件\ASTs</Filter>
+    </ClInclude>
+    <ClInclude Include="ASTs\AstValue.hpp">
+      <Filter>头文件\ASTs</Filter>
+    </ClInclude>
+    <ClInclude Include="ASTs\AstFunction.hpp">
+      <Filter>头文件\ASTs</Filter>
+    </ClInclude>
+    <ClInclude Include="ASTs\AstId.hpp">
+      <Filter>头文件\ASTs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="fascript.cpp">
@@ -48,6 +69,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="fasvisitor.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ASTs\IAstExpr.cpp">
+      <Filter>源文件\ASTs</Filter>
+    </ClCompile>
+    <ClCompile Include="function.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
