@@ -1,5 +1,5 @@
 
-// Generated from FAScript.g4 by ANTLR 4.9.2
+// Generated from FAScript.g4 by ANTLR 4.9.3
 
 #pragma once
 
@@ -120,6 +120,14 @@ public:
   }
 
   virtual antlrcpp::Any visitFnExpr(FAScriptParser::FnExprContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitClassExprItem(FAScriptParser::ClassExprItemContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitClassExpr(FAScriptParser::ClassExprContext *ctx) override {
     return visitChildren(ctx);
   }
 

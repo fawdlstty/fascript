@@ -27,42 +27,42 @@ static void _push_args (std::vector<Value> &_stack, T1 _t) {
 
 
 
-Value::Value (std::shared_ptr<FAScript> _s): m_s (_s), m_value (std::nullopt) {}
-Value::Value (std::shared_ptr<FAScript> _s, int64_t _val): m_s (_s), m_value (_val) {}
-Value::Value (std::shared_ptr<FAScript> _s, double _val): m_s (_s), m_value (_val) {}
-Value::Value (std::shared_ptr<FAScript> _s, std::string _val): m_s (_s), m_value (_val) {}
-Value::Value (std::shared_ptr<FAScript> _s, std::vector<Value> _val): m_s (_s), m_value (_val) {}
-Value::Value (std::shared_ptr<FAScript> _s, std::map<MapKey, Value> _val): m_s (_s), m_value (_val) {}
-Value::Value (const Value &_o): m_s (_o.m_s), m_value (_o.m_value) {}
-Value &Value::operator= (const Value &_o) { m_s = _o.m_s; m_value = _o.m_value; }
+Value::Value (std::shared_ptr<FAScript> _s): m_s (_s), m_data (std::nullopt) {}
+Value::Value (std::shared_ptr<FAScript> _s, int64_t _val): m_s (_s), m_data (_val) {}
+Value::Value (std::shared_ptr<FAScript> _s, double _val): m_s (_s), m_data (_val) {}
+Value::Value (std::shared_ptr<FAScript> _s, std::string _val): m_s (_s), m_data (_val) {}
+Value::Value (std::shared_ptr<FAScript> _s, std::vector<Value> _val): m_s (_s), m_data (_val) {}
+Value::Value (std::shared_ptr<FAScript> _s, std::map<MapKey, Value> _val): m_s (_s), m_data (_val) {}
+Value::Value (const Value &_o): m_s (_o.m_s), m_data (_o.m_data) {}
+Value &Value::operator= (const Value &_o) { m_s = _o.m_s; m_data = _o.m_data; }
 
-//template<AllowedCppType ...Args>
-//Value Value::Invoke (std::vector<Value> &_stack, Args ...args) {
-//	auto _func = _get_func_check_arg (m_value, sizeof... (args));
-//	_push_args (args...);
-//	return _func.Call ();
-//}
-//
-//Value Value::Invoke (std::vector<Value> &_stack) {
-//	auto _func = _get_func_check_arg (m_value, 0);
-//	//return _func.Call ();
-//}
+template<AllowedCppType ...Args>
+Value Value::Invoke (std::vector<Value> &_stack, Args ...args) {
+	auto _func = _get_func_check_arg (m_data, sizeof... (args));
+	_push_args (args...);
+	return _func->Call (_stack);
+}
+
+Value Value::Invoke (std::vector<Value> &_stack) {
+	auto _func = _get_func_check_arg (m_data, 0);
+	return _func->Call (_stack);
+}
 
 Value &Value::operator[] (int64_t _val) {
-	if (m_value.index () == 5) {
-		auto &_vec = std::get<std::vector<Value>> (m_value);
+	if (m_data.index () == 5) {
+		auto &_vec = std::get<std::vector<Value>> (m_data);
 		if (_vec.size () > _val)
 			return _vec [_val];
-	} else if (m_value.index () == 6) {
-		return std::get<std::map<MapKey, Value>> (m_value) [_val];
+	} else if (m_data.index () == 6) {
+		return std::get<std::map<MapKey, Value>> (m_data) [_val];
 	} else {
 		throw Exception { "failed access." };
 	}
 }
 
 Value &Value::operator[] (std::string _val) {
-	if (m_value.index () == 6) {
-		return std::get<std::map<MapKey, Value>> (m_value) [_val];
+	if (m_data.index () == 6) {
+		return std::get<std::map<MapKey, Value>> (m_data) [_val];
 	} else {
 		throw Exception { "failed access." };
 	}

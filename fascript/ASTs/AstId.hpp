@@ -1,5 +1,5 @@
-#ifndef __ASTID_HPP__
-#define __ASTID_HPP__
+#ifndef __AST_ID_HPP__
+#define __AST_ID_HPP__
 
 
 
@@ -13,11 +13,11 @@ enum AstIdType { Normal = 0, Global = 1, This = 2 };
 
 
 class AstId: IAstExpr {
-public:
-	std::string Name;
-	AstIdType Type;
+	AstId (std::string _name, AstIdType _type): m_name (_name), m_type (_type) {}
 
-	AstId (std::string _name, AstIdType _type): Name (_name), Type (_type) {}
+public:
+	std::string m_name;
+	AstIdType m_type;
 
 	static std::shared_ptr<IAstExpr> FromName (std::string _id) {
 		AstIdType Type = AstIdType::Normal;
@@ -33,9 +33,11 @@ public:
 	bool GenerateBinaryCode (std::vector<uint8_t> &_buf, fas::FAScript &_fas) override {
 
 	}
+
+	bool AllowAddAddSubSub () override { return true; }
 };
 }
 
 
 
-#endif //__ASTID_HPP__
+#endif //__AST_ID_HPP__

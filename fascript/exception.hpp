@@ -19,6 +19,7 @@ public:
 	static Exception FromConvert (CppType _src, CppType _dest) {
 		return Exception { std::format ("cannot convert {} to {}.", magic_enum::enum_name (_src), magic_enum::enum_name (_dest)) };
 	}
+	static Exception NotImplement () { return Exception { "not implement." }; }
 	static Exception NotSupportType () { return Exception { "not support type." }; }
 	static Exception FailedAccess () { return Exception { "failed access." }; }
 

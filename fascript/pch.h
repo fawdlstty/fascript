@@ -16,6 +16,7 @@
 #include <mutex>
 #include <optional>
 #include <semaphore>
+#include <set>
 #include <string>
 #include <tuple>
 #include <type_traits>

@@ -1,5 +1,5 @@
-#ifndef __ASTFUNCTION_HPP__
-#define __ASTFUNCTION_HPP__
+#ifndef __AST_FUNCTION_HPP__
+#define __AST_FUNCTION_HPP__
 
 
 
@@ -40,4 +40,4 @@ public:
 
 
 
-#endif //__ASTFUNCTION_HPP__
+#endif //__AST_FUNCTION_HPP__

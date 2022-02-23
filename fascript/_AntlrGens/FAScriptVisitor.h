@@ -1,5 +1,5 @@
 
-// Generated from FAScript.g4 by ANTLR 4.9.2
+// Generated from FAScript.g4 by ANTLR 4.9.3
 
 #pragma once
 
@@ -72,6 +72,10 @@ public:
     virtual antlrcpp::Any visitQuotExpr(FAScriptParser::QuotExprContext *context) = 0;
 
     virtual antlrcpp::Any visitFnExpr(FAScriptParser::FnExprContext *context) = 0;
+
+    virtual antlrcpp::Any visitClassExprItem(FAScriptParser::ClassExprItemContext *context) = 0;
+
+    virtual antlrcpp::Any visitClassExpr(FAScriptParser::ClassExprContext *context) = 0;
 
     virtual antlrcpp::Any visitStrongExprBase(FAScriptParser::StrongExprBaseContext *context) = 0;
 

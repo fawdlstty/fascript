@@ -57,6 +57,18 @@
     <ClInclude Include="ASTs\AstId.hpp">
       <Filter>头文件\ASTs</Filter>
     </ClInclude>
+    <ClInclude Include="ASTs\AstOp1.hpp">
+      <Filter>头文件\ASTs</Filter>
+    </ClInclude>
+    <ClInclude Include="ASTs\AstInvoke.hpp">
+      <Filter>头文件\ASTs</Filter>
+    </ClInclude>
+    <ClInclude Include="ASTs\AstAccess.hpp">
+      <Filter>头文件\ASTs</Filter>
+    </ClInclude>
+    <ClInclude Include="ASTs\AstRangeAccess.hpp">
+      <Filter>头文件\ASTs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="fascript.cpp">

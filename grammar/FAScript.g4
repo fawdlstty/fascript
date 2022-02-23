@@ -158,7 +158,7 @@ strongExprBase:				(ColonColon? Id) | literal | quotExpr | fnExpr;
 strongExprPrefix:			SubOp | AddAddOp | SubSubOp | ReverseOp | Exclam;								// Ç°×º - ++ -- ~ !
 strongExprSuffix			: AddAddOp | SubSubOp															// ºó×º ++ --
 							| (QuotYuanL (expr (Comma expr)*)? QuotYuanR)									//     Write ("")
-							| (QuotFangL (exprOpt (PointPoint exprOpt)?) QuotFangR)							//     list [12]
+							| (QuotFangL (exprOpt (PointPoint exprOpt)?) QuotFangR)							//     list [12]    list [12..24]
 							| (PointOp Id)																	//     wnd.Name
 							;
 strongExpr:					strongExprPrefix* strongExprBase strongExprSuffix*;
