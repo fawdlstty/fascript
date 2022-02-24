@@ -5,10 +5,10 @@
 
 
 namespace fas {
-static std::shared_ptr<Function> _get_func_check_arg (ValueData &m_value, size_t _arg_size) {
-	if (m_value.index () != 4)
+static std::shared_ptr<Function> _get_func_check_arg (ValueData &m_data, size_t _arg_size) {
+	if (m_data.index () != (size_t) CppType::type_function)
 		throw Exception { "failed access." };
-	auto _func = std::get<std::shared_ptr<Function>> (m_value);
+	auto _func = std::get<std::shared_ptr<Function>> (m_data);
 	if (_func->ArgumentCount != _arg_size)
 		throw Exception { std::format ("function {} need {} argument but input {} argument.", _func->Name, _func->ArgumentCount, _arg_size) };
 	return _func;
@@ -40,20 +40,22 @@ template<AllowedCppType ...Args>
 Value Value::Invoke (std::vector<Value> &_stack, Args ...args) {
 	auto _func = _get_func_check_arg (m_data, sizeof... (args));
 	_push_args (args...);
-	return _func->Call (_stack);
+	// TODO
+	//return _func->Call (_stack);
 }
 
 Value Value::Invoke (std::vector<Value> &_stack) {
 	auto _func = _get_func_check_arg (m_data, 0);
-	return _func->Call (_stack);
+	// TODO
+	//return _func->Call (_stack);
 }
 
 Value &Value::operator[] (int64_t _val) {
-	if (m_data.index () == 5) {
+	if (m_data.index () == (size_t) CppType::type_vector) {
 		auto &_vec = std::get<std::vector<Value>> (m_data);
-		if (_vec.size () > _val)
+		if (_vec.size () > (size_t) _val)
 			return _vec [_val];
-	} else if (m_data.index () == 6) {
+	} else if (m_data.index () == (size_t) CppType::type_map) {
 		return std::get<std::map<MapKey, Value>> (m_data) [_val];
 	} else {
 		throw Exception { "failed access." };
@@ -61,7 +63,7 @@ Value &Value::operator[] (int64_t _val) {
 }
 
 Value &Value::operator[] (std::string _val) {
-	if (m_data.index () == 6) {
+	if (m_data.index () == (size_t) CppType::type_map) {
 		return std::get<std::map<MapKey, Value>> (m_data) [_val];
 	} else {
 		throw Exception { "failed access." };
@@ -70,31 +72,35 @@ Value &Value::operator[] (std::string _val) {
 
 template<typename T>
 Value::operator T() {
-	if constexpr (std::is_same<std::decay<T>, int64_t>::value) {
-		if (m_value.index () != 1)
-			throw Exception::FromConvert (CppType (m_value.index ()), CppType::type_int64);
-		return (T) std::get<int64_t> (m_value);
+	if constexpr (std::is_same<std::decay<T>, bool>::value) {
+		if (m_data.index () != (size_t) CppType::type_bool)
+			throw Exception::FromConvert (CppType (m_data.index ()), CppType::type_bool);
+		return (T) std::get<bool> (m_data);
 	} else if constexpr (std::is_same<std::decay<T>, double>::value) {
-		if (m_value.index () != 2)
-			throw Exception::FromConvert (CppType (m_value.index ()), CppType::type_double);
-		return (T) std::get<double> (m_value);
+		if (m_data.index () != (size_t) CppType::type_int64)
+			throw Exception::FromConvert (CppType (m_data.index ()), CppType::type_int64);
+		return (T) std::get<int64_t> (m_data);
+	} else if constexpr (std::is_same<std::decay<T>, double>::value) {
+		if (m_data.index () != (size_t) CppType::type_double)
+			throw Exception::FromConvert (CppType (m_data.index ()), CppType::type_double);
+		return (T) std::get<double> (m_data);
 	} else if constexpr (std::is_same<std::decay<T>, std::string>::value) {
-		if (m_value.index () != 3)
-			throw Exception::FromConvert (CppType (m_value.index ()), CppType::type_string);
-		return (T) std::get<std::string> (m_value);
+		if (m_data.index () != (size_t) CppType::type_string)
+			throw Exception::FromConvert (CppType (m_data.index ()), CppType::type_string);
+		return (T) std::get<std::string> (m_data);
 	} else if constexpr (std::is_same<std::decay<T>, Function>::value) {
-		if (m_value.index () != 4)
-			throw Exception::FromConvert (CppType (m_value.index ()), CppType::type_function);
-		return (T) std::get<Function> (m_value);
+		if (m_data.index () != (size_t) CppType::type_function)
+			throw Exception::FromConvert (CppType (m_data.index ()), CppType::type_function);
+		return (T) std::get<Function> (m_data);
 	} else if constexpr (std::is_same<std::decay<T>, std::vector<Value>>::value) {
-		if (m_value.index () != 5)
-			throw Exception::FromConvert (CppType (m_value.index ()), CppType::type_vector);
-		return (T) std::get<std::vector<Value>> (m_value);
+		if (m_data.index () != (size_t) CppType::type_vector)
+			throw Exception::FromConvert (CppType (m_data.index ()), CppType::type_vector);
+		return (T) std::get<std::vector<Value>> (m_data);
 	} else if constexpr (std::is_same<std::decay<T>, std::map<MapKey, Value>>::value) {
-		if (m_value.index () != 6)
-			throw Exception::FromConvert (CppType (m_value.index ()), CppType::type_map);
-		return (T) std::get<Map> (m_value);
-	} else constexpr {
+		if (m_data.index () != (size_t) CppType::type_map)
+			throw Exception::FromConvert (CppType (m_data.index ()), CppType::type_map);
+		return (T) std::get<std::map<MapKey, Value>> (m_data);
+	} else {
 		throw Exception::NotSupportType ();
 	}
 }

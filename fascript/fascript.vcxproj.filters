@@ -86,8 +86,5 @@
     <ClCompile Include="ASTs\IAstExpr.cpp">
       <Filter>源文件\ASTs</Filter>
     </ClCompile>
-    <ClCompile Include="function.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>

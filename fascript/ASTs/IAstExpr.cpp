@@ -1,4 +1,4 @@
-#include "../pch.h"
+#include "pch.h"
 #include "IAstExpr.hpp"
 
 
@@ -102,9 +102,16 @@ std::shared_ptr<IAstExpr> IAstExpr::FromCtx (FAScriptParser::StrongExprContext *
 
 
 std::shared_ptr<IAstExpr> IAstExpr::FromCtx (FAScriptParser::StrongExprBaseContext *_ctx) {
-	// TODO
 	if (_ctx->Id ()) {
-		std::string _id = _ctx->getText ();
+		return AstId::FromName (_ctx->getText ());
+	} else if (_ctx->literal ()) {
+		return AstValue::FromCtx (_ctx->literal ());
+	} else if (_ctx->quotExpr ()) {
+		return FromCtx (_ctx->quotExpr ()->expr ());
+	} else if (_ctx->fnExpr ()) {
+		return AstFunction::FromCtx (_ctx->fnExpr ());
+	} else {
+		throw Exception::NotImplement ();
 	}
 }
 }

@@ -24,16 +24,9 @@ bool FAScript::RunCode (std::string _code) {
 	std::vector<std::shared_ptr<IAstExpr>> _exprs = _visitor.visit (_parser.program ()).as<std::vector<std::shared_ptr<IAstExpr>>> ();
 	std::unique_lock _ul { m_mtx, std::defer_lock };
 	_ul.lock ();
-	std::vector<uint8_t> _codes;
+	std::vector<uint8_t> _bincodes;
 	for (auto _expr : _exprs) {
-		auto _expr_p = _expr.get ();
-		if (auto _op2 = dynamic_cast<AstOp2*> (_expr_p)) {
-			if (auto _op2_left = dynamic_cast<AstId *> (_op2->m_left.get ())) {
-
-			} else {
-				throw fas::Exception ("赋值运算符的左侧必须是ID");
-			}
-		}
+		_expr->GenerateBinaryCode (_bincodes, *this);
 	}
 
 	// TODO 执行代码

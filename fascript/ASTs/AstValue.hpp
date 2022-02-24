@@ -10,28 +10,109 @@
 
 namespace fas {
 class AstValue: IAstExpr {
-	AstValue (CppType _type, std::string _data) {
-		switch (_type) {
-			case CppType::type_nullopt:		m_data = std::nullopt;			break;
-			case CppType::type_int64:		m_data = std::stoll (_data);	break;
-			case CppType::type_double:		m_data = std::stod (_data);		break;
-			case CppType::type_string:		m_data = _data;					break;
-			//case CppType::type_function:
-			//case CppType::type_vector:
-			//case CppType::type_map:
-			default:
-				throw Exception (std::format ("暂不支持的值初始化类型 {}", magic_enum::enum_name (_type)));
+	AstValue (): m_data (std::nullopt) {}
+	template<AllowedCppType T>
+	AstValue (T _val): m_data (_val) {}
+
+public:
+	ValueData m_data;
+
+	static std::shared_ptr<IAstExpr> FromNull () { return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstValue {}); }
+	template<AllowedCppType T>
+	static std::shared_ptr<IAstExpr> FromValue (T _val) { return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstValue { _val }); }
+
+	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::LiteralContext *_ctx) {
+		std::string _data = _ctx->getText ();
+		if (_ctx->BoolLiteral ()) {
+			return FromValue<bool> (_data == "true");
+		} else if (_ctx->NumLiteral ()) {
+			if (_data.find ('.') != std::string::npos) {
+				return FromValue<double> (std::stod (_data));
+			} else {
+				return FromValue<int64_t> (std::stoll (_data));
+			}
+		} else if (_ctx->StringLiteral ()) {
+			auto _odata = TransformMean (_data.substr (1, _data.size () - 2));
+			if (!_odata.has_value ())
+				throw Exception::NotImplement ();
+			return FromValue<std::string> (_odata.value ());
+		} else {
+			throw Exception::NotImplement ();
 		}
 	}
 
-public:
-	ValueData m_data { std::nullopt };
+	void GenerateBinaryCode (std::vector<uint8_t> &_bincodes, fas::FAScript &_fas) override {
 
-	static std::shared_ptr<IAstExpr> FromNull () { return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstValue { CppType::type_nullopt, "" }); }
-	static std::shared_ptr<IAstExpr> FromInt64 (std::string _val) { return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstValue { CppType::type_int64, _val }); }
+	}
 
-	bool GenerateBinaryCode (std::vector<uint8_t> &_buf, fas::FAScript &_fas) override {
+private:
+	static std::optional<char> _char_to_hex (char _ch) {
+		if (_ch >= '0' && _ch <= '9') {
+			return _ch - '0';
+		} else if (_ch >= 'A' && _ch <= 'F') {
+			return _ch - 'A' + 10;
+		} else if (_ch >= 'a' && _ch <= 'f') {
+			return _ch - 'a' + 10;
+		}
+		return std::nullopt;
+	}
 
+	static std::optional<std::string> TransformMean (std::string _s) {
+		std::string _tmp = _s;
+		std::optional<char> _c1, _c2;
+		for (size_t i = 0; i < _s.size (); ++i) {
+			if (_s [i] == '\\') {
+				switch (_s [i + 1]) {
+					case 'r':
+						_s [i] = '\r';
+						_s.erase (i + 1);
+						break;
+					case 'n':
+						_s [i] = '\n';
+						_s.erase (i + 1);
+						break;
+					case 't':
+						_s [i] = '\t';
+						_s.erase (i + 1);
+						break;
+					case '\'':
+						_s [i] = '\'';
+						_s.erase (i + 1);
+						break;
+					case '\"':
+						_s [i] = '\"';
+						_s.erase (i + 1);
+						break;
+					case '\\':
+						_s [i] = '\\';
+						_s.erase (i + 1);
+						break;
+					case 'x':
+						_c1 = _char_to_hex (_s [i + 2]), _c2 = _char_to_hex (_s [i + 3]);
+						if ((!_c1.has_value ()) || (!_c2.has_value ()))
+							return std::nullopt;
+						_s [i] = (_c1.value () << 4) + _c2.value ();
+						_s.erase (i + 1, 3);
+						break;
+					case 'u':
+						_c1 = _char_to_hex (_s [i + 2]), _c2 = _char_to_hex (_s [i + 3]);
+						if ((!_c1.has_value ()) || (!_c2.has_value ()))
+							return std::nullopt;
+						_s [i] = (_c1.value () << 4) + _c2.value ();
+						//
+						_c1 = _char_to_hex (_s [i + 4]), _c2 = _char_to_hex (_s [i + 5]);
+						if ((!_c1.has_value ()) || (!_c2.has_value ())) {
+							return std::nullopt;
+						}
+						_s [i + 1] = (_c1.value () << 4) + _c2.value ();
+						_s.erase (i + 2, 4);
+						break;
+					default:
+						break;
+				}
+			}
+		}
+		return _s;
 	}
 };
 }

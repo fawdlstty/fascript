@@ -8,7 +8,7 @@
 
 
 namespace fas {
-enum AstIdType { Normal = 0, Global = 1, This = 2 };
+enum class AstIdType { Normal = 0, Global = 1, This = 2 };
 
 
 
@@ -30,7 +30,7 @@ public:
 		}
 	}
 
-	bool GenerateBinaryCode (std::vector<uint8_t> &_buf, fas::FAScript &_fas) override {
+	void GenerateBinaryCode (std::vector<uint8_t> &_bincodes, fas::FAScript &_fas) override {
 
 	}
 

@@ -14,8 +14,6 @@ public:
 	size_t Id;
 	size_t ArgumentCount;
 	std::vector<uint8_t> Codes;
-
-	Value Call (std::vector<Value> &_stack);
 };
 }
 

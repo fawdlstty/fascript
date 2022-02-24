@@ -25,14 +25,14 @@ public:
 	std::vector<std::string> Arguments;
 
 	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::FnExprContext *_ctx) {
-		auto _fn = std::shared_ptr<IAstExpr> ((IAstExpr *) new AstFunction { _ctx });
+		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstFunction { _ctx });
 	}
 
 	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::FnStmtContext *_ctx) {
-		auto _fn = std::shared_ptr<IAstExpr> ((IAstExpr *) new AstFunction { _ctx });
+		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstFunction { _ctx });
 	}
 
-	bool GenerateBinaryCode (std::vector<uint8_t> &_buf, fas::FAScript &_fas) override {
+	void GenerateBinaryCode (std::vector<uint8_t> &_bincodes, fas::FAScript &_fas) override {
 
 	}
 };
