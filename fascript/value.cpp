@@ -34,7 +34,7 @@ Value::Value (std::shared_ptr<FAScript> _s, std::string _val): m_s (_s), m_data 
 Value::Value (std::shared_ptr<FAScript> _s, std::vector<Value> _val): m_s (_s), m_data (_val) {}
 Value::Value (std::shared_ptr<FAScript> _s, std::map<MapKey, Value> _val): m_s (_s), m_data (_val) {}
 Value::Value (const Value &_o): m_s (_o.m_s), m_data (_o.m_data) {}
-Value &Value::operator= (const Value &_o) { m_s = _o.m_s; m_data = _o.m_data; }
+Value &Value::operator= (const Value &_o) { m_s = _o.m_s; m_data = _o.m_data; return *this; }
 
 template<AllowedCppType ...Args>
 Value Value::Invoke (std::vector<Value> &_stack, Args ...args) {
@@ -42,32 +42,41 @@ Value Value::Invoke (std::vector<Value> &_stack, Args ...args) {
 	_push_args (args...);
 	// TODO
 	//return _func->Call (_stack);
+	throw Exception::NotImplement ();
 }
 
 Value Value::Invoke (std::vector<Value> &_stack) {
 	auto _func = _get_func_check_arg (m_data, 0);
 	// TODO
 	//return _func->Call (_stack);
+	throw Exception::NotImplement ();
 }
 
-Value &Value::operator[] (int64_t _val) {
+Value Value::operator[] (int64_t _val) {
 	if (m_data.index () == (size_t) CppType::type_vector) {
 		auto &_vec = std::get<std::vector<Value>> (m_data);
-		if (_vec.size () > (size_t) _val)
-			return _vec [_val];
+		if (_val < 0)
+			_val += (int64_t) _vec.size ();
+		if (_val >= 0 && _vec.size () > (size_t) _val)
+			return _vec [(size_t) _val];
+		throw Exception::NotImplement ();
 	} else if (m_data.index () == (size_t) CppType::type_map) {
-		return std::get<std::map<MapKey, Value>> (m_data) [_val];
-	} else {
-		throw Exception { "failed access." };
+		auto &_map = std::get<std::map<MapKey, Value>> (m_data);
+		auto _pval = _map.find (_val);
+		if (_pval != _map.end ())
+			return Value { _pval->second };
 	}
+	throw Exception { "failed access." };
 }
 
-Value &Value::operator[] (std::string _val) {
+Value Value::operator[] (std::string _val) {
 	if (m_data.index () == (size_t) CppType::type_map) {
-		return std::get<std::map<MapKey, Value>> (m_data) [_val];
-	} else {
-		throw Exception { "failed access." };
+		auto &_map = std::get<std::map<MapKey, Value>> (m_data);
+		auto _pval = _map.find (_val);
+		if (_pval != _map.end ())
+			return Value { _pval->second };
 	}
+	throw Exception { "failed access." };
 }
 
 template<typename T>

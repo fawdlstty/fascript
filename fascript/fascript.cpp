@@ -32,6 +32,20 @@ bool FAScript::RunCode (std::string _code) {
 	// TODO 执行代码
 
 	// 执行栈
-	auto _stack = std::make_shared<std::vector<Value>> ();
+	//auto _stack = std::make_shared<std::vector<Value>> ();
+	return false;
+}
+
+
+
+uint16_t FAScript::GetGlobalNameId (std::string _name) {
+	std::unique_lock _ul { m_mtx };
+	auto _p = m_name_to_id.find (_name);
+	if (_p != m_name_to_id.end ())
+		return _p->second;
+	m_next_id++;
+	m_name_to_id [_name] = m_next_id;
+	m_id_to_var [m_next_id] = Value { shared_from_this () };
+	return m_next_id;
 }
 }

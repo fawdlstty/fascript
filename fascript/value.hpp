@@ -11,7 +11,7 @@
 namespace fas {
 class Value {
 public:
-	Value (std::shared_ptr<FAScript> _s);
+	explicit Value (std::shared_ptr<FAScript> _s);
 	explicit Value (std::shared_ptr<FAScript> _s, int64_t _val);
 	explicit Value (std::shared_ptr<FAScript> _s, double _val);
 	explicit Value (std::shared_ptr<FAScript> _s, std::string _val);
@@ -24,8 +24,8 @@ public:
 	Value Invoke (std::vector<Value> &_stack, Args ...args);
 	Value Invoke (std::vector<Value> &_stack);
 
-	Value &operator[] (int64_t _val);
-	Value &operator[] (std::string _val);
+	Value operator[] (int64_t _val);
+	Value operator[] (std::string _val);
 
 	template<typename T>
 	operator T();

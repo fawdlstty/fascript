@@ -34,7 +34,7 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstOp2 { _left, _op, _right });
 	}
 
-	void GenerateBinaryCode (std::vector<uint8_t> &_bincodes, fas::FAScript &_fas) override {
+	void GenerateBinaryCode (std::vector<uint8_t> &_bincodes, std::shared_ptr<FAScript> _s) override {
 
 	}
 };

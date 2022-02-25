@@ -188,11 +188,13 @@
     <ClInclude Include="ASTs\AstId.hpp" />
     <ClInclude Include="ASTs\AstOp2.hpp" />
     <ClInclude Include="ASTs\AstValue.hpp" />
+    <ClInclude Include="BinCode.hpp" />
     <ClInclude Include="common.hpp" />
     <ClInclude Include="exception.hpp" />
     <ClInclude Include="fascript.hpp" />
     <ClInclude Include="fasvisitor.hpp" />
     <ClInclude Include="function.hpp" />
+    <ClInclude Include="opcode.hpp" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="value.hpp" />
   </ItemGroup>

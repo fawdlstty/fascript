@@ -41,7 +41,7 @@ public:
 		}
 	}
 
-	void GenerateBinaryCode (std::vector<uint8_t> &_bincodes, fas::FAScript &_fas) override {
+	void GenerateBinaryCode (std::vector<uint8_t> &_bincodes, std::shared_ptr<FAScript> _s) override {
 
 	}
 
