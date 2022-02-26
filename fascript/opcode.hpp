@@ -6,19 +6,29 @@
 namespace fas {
 enum class OpCode {
 	// 栈操作
-	PUSH_NULL,		// 压入一个空值
-	PUSH_BOOL,		// 压入一个 bool 类型值，后接1字节具体值
-	PUSH_INT64,		// 压入一个 int64 类型值，后接8字节具体值
-	PUSH_FLOAT64,	// 压入一个 double 类型值，后接8字节具体值
-	PUSH_GLOBAL,	// 压入一个全局变量值，后接2字节ID
-	PUSH_MEMBER,	// 压入一个象成员变量值，后接2字节ID
-	PUSH_ARGUMENT,	// 压入一个参数值
-	PUSH_VARIABLE,	// 压入一个局部变量值
-	POP_GLOBAL,		// 弹出一个值至全局变量
-	POP_MEMBER,		// 弹出一个值至对象成员变量
-	POP_ARGUMENT,	// 弹出一个值至参数
-	POP_VARIABLE,	// 弹出一个值至局部变量
-	POP,			// 弹出一个值（忽略）
+	LOAD_NULL,			// 载入一个空值
+	LOAD_BOOL,			// 载入一个 bool 类型值，后接1字节具体值
+	LOAD_INT64,			// 载入一个 int64 类型值，后接8字节具体值
+	LOAD_FLOAT64,		// 载入一个 double 类型值，后接8字节具体值
+	LOAD_GLOBAL,		// 载入一个全局变量值，后接2字节ID
+	LOAD_MEMBER,		// 载入一个象成员变量值，后接2字节ID
+	LOAD_ARGUMENT,		// 载入一个参数值
+	LOAD_VARIABLE,		// 载入一个局部变量值
+	STORE_GLOBAL,		// 存档一个值至全局变量
+	STORE_MEMBER,		// 存档一个值至对象成员变量
+	STORE_ARGUMENT,		// 存档一个值至参数
+	STORE_VARIABLE,		// 存档一个值至局部变量
+	STORE,				// 存档一个值（忽略）
+
+	// 访问成员
+	LOAD_MEM_ID,		// 载入对象的某个已获取ID的成员，后接2字节ID	载入对象成员调用顺序示例：LOAD_GLOBAL、LOAD_MEM_ID 具体ID
+	LOAD_MEM_NAME,		// 载入对象的某个成员（2->1）					载入对象成员调用顺序示例：LOAD_GLOBAL、LOAD_VARIABLE、LOAD_MEM_NAME
+	LOAD_MEM_IMMNUM,	// 载入列表的某个元素，后接2字节具体值
+	LOAD_MEM_NUM,		// 载入列表的某个元素（2->1）
+	STORE_MEM_ID,		// 存档对象的某个已获取ID的成员，后接2字节ID	存档对象成员调用顺序示例：LOAD_GLOBAL、STORE_MEM_ID 具体ID
+	STORE_MEM_NAME,		// 存档对象的某个成员（2->1）					存档对象成员调用顺序示例：LOAD_GLOBAL、LOAD_VARIABLE、STORE_MEM_NAME
+	STORE_MEM_IMMNUM,	// 存档列表的某个元素，后接2字节具体值
+	STORE_MEM_NUM,		// 存档列表的某个元素（2->1）
 
 	// 运算
 	NOT,			// 取反 （1->1）

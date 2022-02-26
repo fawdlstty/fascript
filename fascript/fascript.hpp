@@ -10,7 +10,7 @@
 namespace fas {
 class FAScript: std::enable_shared_from_this<FAScript> {
 public:
-	bool RunCode (std::string _code);
+	Value RunCode (std::string _code);
 	uint16_t GetGlobalNameId (std::string _name);
 
 private:

@@ -5,6 +5,8 @@
 
 #define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
 #define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
+#define _SILENCE_CXX20_CODECVT_HEADER_DEPRECATION_WARNING
+#define _SILENCE_ALL_CXX20_DEPRECATION_WARNINGS
 
 
 
@@ -24,11 +26,11 @@
 #include <vector>
 
 #include <magic_enum.hpp>
+#define ANTLR4CPP_STATIC
 #include <antlr4-runtime.h>
 
 
 
 #define WIN32_LEAN_AND_MEAN
-#define ANTLR4CPP_STATIC
 
 #endif //__PCH_H__

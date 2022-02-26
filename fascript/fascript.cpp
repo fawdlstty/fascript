@@ -7,11 +7,14 @@
 #include "FASVisitor.hpp"
 #include "ASTs/IAstExpr.hpp"
 #include "exception.hpp"
+#include "BinCode.hpp"
+
+#pragma comment (lib, "antlr4-runtime.lib")
 
 
 
 namespace fas {
-bool FAScript::RunCode (std::string _code) {
+Value FAScript::RunCode (std::string _code) {
 	// 解析代码
 	antlr4::ANTLRInputStream _stream { _code };
 	FAScriptLexer _lexer { &_stream };
@@ -24,16 +27,16 @@ bool FAScript::RunCode (std::string _code) {
 	std::vector<std::shared_ptr<IAstExpr>> _exprs = _visitor.visit (_parser.program ()).as<std::vector<std::shared_ptr<IAstExpr>>> ();
 	std::unique_lock _ul { m_mtx, std::defer_lock };
 	_ul.lock ();
-	std::vector<uint8_t> _bincodes;
+	BinCode _bc;
 	for (auto _expr : _exprs) {
-		_expr->GenerateBinaryCode (_bincodes, *this);
+		_expr->GenerateBinaryCode (_bc, *this, true);
 	}
 
 	// TODO 执行代码
 
 	// 执行栈
 	//auto _stack = std::make_shared<std::vector<Value>> ();
-	return false;
+	return Value { shared_from_this () };
 }
 
 
@@ -45,7 +48,7 @@ uint16_t FAScript::GetGlobalNameId (std::string _name) {
 		return _p->second;
 	m_next_id++;
 	m_name_to_id [_name] = m_next_id;
-	m_id_to_var [m_next_id] = Value { shared_from_this () };
+	//m_id_to_var [m_next_id] = Value { shared_from_this () };
 	return m_next_id;
 }
 }

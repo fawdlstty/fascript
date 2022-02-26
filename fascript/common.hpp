@@ -3,6 +3,23 @@
 
 
 
+#include <cstdint>
+#include <exception>
+#include <format>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <semaphore>
+#include <set>
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <variant>
+#include <vector>
+
+
+
 namespace fas {
 class Value;
 class Function;

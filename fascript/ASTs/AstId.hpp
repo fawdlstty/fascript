@@ -30,8 +30,8 @@ public:
 		}
 	}
 
-	void GenerateBinaryCode (std::vector<uint8_t> &_bincodes, std::shared_ptr<FAScript> _s) override {
-
+	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, bool _load) override {
+		throw Exception::NotImplement ();
 	}
 
 	bool AllowAddAddSubSub () override { return true; }

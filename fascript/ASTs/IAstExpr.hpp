@@ -21,7 +21,7 @@ public:
 	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::StrongExprContext *_ctx);
 	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::StrongExprBaseContext *_ctx);
 
-	virtual void GenerateBinaryCode (std::vector<uint8_t> &_bincodes, std::shared_ptr<FAScript> _s) = 0;
+	virtual void GenerateBinaryCode (BinCode &_bc, FAScript &_s, bool _load) = 0;
 
 	virtual bool AllowAddAddSubSub () { return false; }
 };

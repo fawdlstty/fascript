@@ -10,6 +10,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "doc", "doc", "{9BFCB85E-43F
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fascript.Example", "fascript.Example\fascript.Example.vcxproj", "{755C041F-93EC-43A8-9AA1-DDB3AEBF3243}"
+	ProjectSection(ProjectDependencies) = postProject
+		{ABC5CF34-23E9-4336-BE81-A2E5460AC345} = {ABC5CF34-23E9-4336-BE81-A2E5460AC345}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fascript", "fascript\fascript.vcxproj", "{ABC5CF34-23E9-4336-BE81-A2E5460AC345}"
 EndProject
