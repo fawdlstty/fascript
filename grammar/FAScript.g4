@@ -157,12 +157,12 @@ classExpr:					QuotHuaL (classExprItem ('\n' classExprItem)*)? QuotHuaR;
 strongExprBase:				(ColonColon? Id) | literal | quotExpr | fnExpr;
 strongExprPrefix:			SubOp | AddAddOp | SubSubOp | ReverseOp | Exclam;								// Ç°×º - ++ -- ~ !
 strongExprSuffix			: AddAddOp | SubSubOp															// ºó×º ++ --
-							| (QuotYuanL (expr (Comma expr)*)? QuotYuanR)									//     Write ("")
-							| (QuotFangL (exprOpt (PointPoint exprOpt)?) QuotFangR)							//     list [12]    list [12..24]
-							| (PointOp Id)																	//     wnd.Name
+							| (QuotYuanL (expr (Comma expr)*)? QuotYuanR)									//	 Write ("")
+							| (QuotFangL (exprOpt (PointPoint exprOpt)?) QuotFangR)							//	 list [12]	list [12..24]
+							| (PointOp Id)																	//	 wnd.Name
 							;
 strongExpr:					strongExprPrefix* strongExprBase strongExprSuffix*;
-middleExpr:					strongExpr (allOp2 strongExpr)*;												//     a == 24    a + b - c
+middleExpr:					strongExpr (allOp2 strongExpr)*;												//	 a == 24	a + b - c
 expr:						middleExpr (allAssign middleExpr)*;
 
 
@@ -171,7 +171,7 @@ expr:						middleExpr (allAssign middleExpr)*;
 // stmt
 //
 fnStmt:						Fn Id QuotYuanL Id* QuotYuanR QuotHuaL stmt* QuotHuaR;
-stmt:						(fnStmt | expr) '\n';
+stmt:						(fnStmt | (Return? expr) | Break | Continue)? '\n';
 program:					stmt* EOF;
 
 
@@ -180,7 +180,5 @@ program:					stmt* EOF;
 // skips
 //
 Comment1:					'/*' .*? '*/' -> channel (HIDDEN);
-Comment2:					'//' ~ [\r\n]* -> channel (HIDDEN);
-WS:							[ \t\r\n]+ -> channel (HIDDEN);
-
-
+Comment2:					'//' ~ [\n]* -> channel (HIDDEN);
+WS:							[ \t\r]+ -> channel (HIDDEN);
