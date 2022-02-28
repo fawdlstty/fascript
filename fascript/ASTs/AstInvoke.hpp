@@ -19,7 +19,7 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstInvoke { _func, _args });
 	}
 
-	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, bool _load) override {
+	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
 		throw Exception::NotImplement ();
 	}
 };

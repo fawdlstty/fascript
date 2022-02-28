@@ -183,6 +183,7 @@
     <ClInclude Include="ASTs\AstOp1.hpp" />
     <ClInclude Include="ASTs\AstAccess.hpp" />
     <ClInclude Include="ASTs\AstRangeAccess.hpp" />
+    <ClInclude Include="ASTs\AstReturn.hpp" />
     <ClInclude Include="ASTs\IAstExpr.hpp" />
     <ClInclude Include="ASTs\AstFunction.hpp" />
     <ClInclude Include="ASTs\AstId.hpp" />

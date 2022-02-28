@@ -15,8 +15,14 @@ antlrcpp::Any FASVisitor::visitProgram (FAScriptParser::ProgramContext *ctx) {
 			_exprs.push_back (AstOp2::MakeAssign (_stmt->fnStmt ()->Id () [0]->getText (), _fn));
 		} else if (_stmt->expr ()) {
 			_exprs.push_back (IAstExpr::FromCtx (_stmt->expr ()));
+		} else if (_stmt->Break ()) {
+			throw Exception::NotImplement ();
+		} else if (_stmt->Continue ()) {
+			throw Exception::NotImplement ();
 		} else {
-			throw fas::Exception ("visit not implement.");
+			std::string _tmp = _stmt->getText ();
+			if (_tmp != "\n" && _tmp != ";")
+				throw Exception::NotImplement ();
 		}
 	}
 	return _exprs;

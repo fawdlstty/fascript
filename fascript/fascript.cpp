@@ -29,7 +29,8 @@ Value FAScript::RunCode (std::string _code) {
 	_ul.lock ();
 	BinCode _bc;
 	for (auto _expr : _exprs) {
-		_expr->GenerateBinaryCode (_bc, *this, true);
+		if (_expr)
+			_expr->GenerateBinaryCode (_bc, *this, OpType::None);
 	}
 
 	// TODO 执行代码
@@ -48,7 +49,15 @@ uint16_t FAScript::GetGlobalNameId (std::string _name) {
 		return _p->second;
 	m_next_id++;
 	m_name_to_id [_name] = m_next_id;
-	//m_id_to_var [m_next_id] = Value { shared_from_this () };
+	return m_next_id;
+}
+
+
+
+uint16_t FAScript::GetGlobalFuncId (std::shared_ptr<Function> _func) {
+	std::unique_lock _ul { m_mtx };
+	m_next_id++;
+	m_id_to_func [m_next_id] = _func;
 	return m_next_id;
 }
 }

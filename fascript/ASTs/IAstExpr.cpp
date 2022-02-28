@@ -1,9 +1,41 @@
 #include "pch.h"
 #include "IAstExpr.hpp"
+#include "../exception.hpp"
 
 
 
 namespace fas {
+std::shared_ptr<IAstExpr> IAstExpr::FromCtx (FAScriptParser::StmtContext *_ctx) {
+	if (_ctx->fnStmt ()) {
+		return AstFunction::FromCtx (_ctx->fnStmt ());
+	} else if (_ctx->expr ()) {
+		auto _expr = FromCtx (_ctx->expr ());
+		return _ctx->Return () ? AstReturn::Make (_expr) : _expr;
+	} else if (_ctx->Return ()) {
+		return AstReturn::Make ();
+	} else if (_ctx->Break ()) {
+		throw Exception::NotImplement ();
+	} else if (_ctx->Continue ()) {
+		throw Exception::NotImplement ();
+	} else {
+		std::string _text = _ctx->getText ();
+		if (_text != "\n" && _text != ";")
+			throw Exception::NotImplement ();
+		return nullptr;
+	}
+}
+
+
+
+std::vector<std::shared_ptr<IAstExpr>> IAstExpr::FromCtxs (std::vector<FAScriptParser::StmtContext *> _ctxs) {
+	std::vector<std::shared_ptr<IAstExpr>> _exprs;
+	for (auto _ctx : _ctxs)
+		_exprs.push_back (FromCtx (_ctx));
+	return _exprs;
+}
+
+
+
 std::shared_ptr<IAstExpr> IAstExpr::FromCtx (FAScriptParser::ExprOptContext *_ctx) {
 	return _ctx->expr () ? FromCtx (_ctx->expr ()) : AstValue::FromNull ();
 }

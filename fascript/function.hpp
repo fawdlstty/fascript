@@ -10,9 +10,8 @@
 namespace fas {
 class Function {
 public:
-	std::string Name;
-	size_t Id;
-	size_t ArgumentCount;
+	uint16_t Id = 0;
+	size_t ArgumentCount = 0;
 	std::vector<uint8_t> Codes;
 };
 }

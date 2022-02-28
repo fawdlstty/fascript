@@ -41,8 +41,21 @@ public:
 		}
 	}
 
-	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, bool _load) override {
-		throw Exception::NotImplement ();
+	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
+		// std::nullopt_t, bool, int64_t, double, std::string, std::shared_ptr<Function>, std::vector<Value>, std::map<MapKey, Value>
+		if (_type == OpType::Load) {
+			switch (m_data.index ()) {
+			case 0: _bc.LoadNull (); break;
+			case 1: _bc.LoadBool (std::get<bool> (m_data)); break;
+			case 2: _bc.LoadInt64 (std::get<int64_t> (m_data)); break;
+			case 3: _bc.LoadFloat64 (std::get<double> (m_data)); break;
+			case 4: _bc.LoadString (std::get<std::string> (m_data)); break;
+			case 5: _bc.LoadFunction (std::get<std::shared_ptr<Function>> (m_data)->Id); break;
+			default: throw Exception::NotImplement ();
+			}
+		} else {
+			throw Exception::NotImplement ();
+		}
 	}
 
 private:

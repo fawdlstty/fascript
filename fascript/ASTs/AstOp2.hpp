@@ -34,14 +34,18 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstOp2 { _left, _op, _right });
 	}
 
-	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, bool _load) override {
-		if (_load) {
+	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
+		if (_type == OpType::None) {
 			if (m_op == "=") {
-				m_right->GenerateBinaryCode (_bc, _s, true);
-				m_left->GenerateBinaryCode (_bc, _s, false);
+				m_right->GenerateBinaryCode (_bc, _s, OpType::Load);
+				m_left->GenerateBinaryCode (_bc, _s, OpType::Store);
 			} else {
 				throw Exception::NotImplement ();
 			}
+		} else if (_type == OpType::Load) {
+			m_right->GenerateBinaryCode (_bc, _s, OpType::Load);
+			m_left->GenerateBinaryCode (_bc, _s, OpType::Load);
+			_bc.DoOp2 (m_op);
 		} else {
 			throw Exception::NotImplement ();
 		}

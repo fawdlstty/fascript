@@ -93,6 +93,9 @@
     <ClInclude Include="_AntlrGens\FAScriptVisitor.h">
       <Filter>头文件\_AntlrGens</Filter>
     </ClInclude>
+    <ClInclude Include="ASTs\AstReturn.hpp">
+      <Filter>头文件\ASTs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="fascript.cpp">

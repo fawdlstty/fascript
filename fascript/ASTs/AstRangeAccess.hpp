@@ -18,7 +18,7 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstRangeAccess { _value, _arg1, _arg2 });
 	}
 
-	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, bool _load) override {
+	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
 		throw Exception::NotImplement ();
 	}
 };

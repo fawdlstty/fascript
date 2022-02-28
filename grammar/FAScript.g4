@@ -171,7 +171,7 @@ expr:						middleExpr (allAssign middleExpr)*;
 // stmt
 //
 fnStmt:						Fn Id QuotYuanL Id* QuotYuanR QuotHuaL stmt* QuotHuaR;
-stmt:						(fnStmt | (Return? expr) | Break | Continue)? '\n';
+stmt:						(fnStmt | (Return? expr?) | Break | Continue) ('\n' | Semi);
 program:					stmt* EOF;
 
 

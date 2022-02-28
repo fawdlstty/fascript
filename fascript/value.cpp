@@ -10,7 +10,7 @@ static std::shared_ptr<Function> _get_func_check_arg (ValueData &m_data, size_t 
 		throw Exception { "failed access." };
 	auto _func = std::get<std::shared_ptr<Function>> (m_data);
 	if (_func->ArgumentCount != _arg_size)
-		throw Exception { std::format ("function {} need {} argument but input {} argument.", _func->Name, _func->ArgumentCount, _arg_size) };
+		throw Exception { std::format ("function need {} argument but input {} argument.", _func->ArgumentCount, _arg_size) };
 	return _func;
 }
 

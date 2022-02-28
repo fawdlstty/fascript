@@ -23,7 +23,7 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstOp1 { _value, _type });
 	}
 
-	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, bool _load) override {
+	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
 		throw Exception::NotImplement ();
 	}
 

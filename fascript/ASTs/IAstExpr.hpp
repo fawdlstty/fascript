@@ -14,6 +14,8 @@ class IAstExpr {
 public:
 	antlr4::Token *m_token = nullptr;
 
+	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::StmtContext *_ctx);
+	static std::vector<std::shared_ptr<IAstExpr>> FromCtxs (std::vector<FAScriptParser::StmtContext *> _ctxs);
 	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::ExprOptContext *_ctx);
 	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::ExprContext *_ctx);
 	static std::vector<std::shared_ptr<IAstExpr>> FromCtxs (std::vector<FAScriptParser::ExprContext *> _ctxs);
@@ -21,7 +23,7 @@ public:
 	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::StrongExprContext *_ctx);
 	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::StrongExprBaseContext *_ctx);
 
-	virtual void GenerateBinaryCode (BinCode &_bc, FAScript &_s, bool _load) = 0;
+	virtual void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) = 0;
 
 	virtual bool AllowAddAddSubSub () { return false; }
 };
@@ -29,13 +31,14 @@ public:
 
 
 
+#include "AstAccess.hpp"
 #include "AstFunction.hpp"
 #include "AstId.hpp"
 #include "AstInvoke.hpp"
 #include "AstOp1.hpp"
 #include "AstOp2.hpp"
-#include "AstAccess.hpp"
 #include "AstRangeAccess.hpp"
+#include "AstReturn.hpp"
 #include "AstValue.hpp"
 
 
