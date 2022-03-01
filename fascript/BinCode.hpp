@@ -27,7 +27,7 @@ struct BinCode {
 	}
 	void LoadFunction (uint16_t _func_id) { m_data.push_back ((uint8_t) OpCode::LOAD_FUNC); _load_int (_func_id); }
 	void LoadGlobal (uint16_t _var_id) { m_data.push_back ((uint8_t) OpCode::LOAD_GLOBAL); _load_int (_var_id); }
-	void Return (bool _load) { m_data.push_back ((uint8_t) (_load ? OpCode::RET_LOAD : OpCode::RET)); }
+	void Return (bool _load) { m_data.push_back ((uint8_t) (_load ? OpCode::RET_VAL : OpCode::RET)); }
 	void DoOp2 (std::string _op) {
 		if (_op.size () == 1) {
 			switch (_op [0]) {

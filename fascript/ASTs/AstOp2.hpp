@@ -34,6 +34,24 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstOp2 { _left, _op, _right });
 	}
 
+	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
+		if (_type == OpType::None) {
+			if (m_op == "=") {
+				_start = m_right->GetBinaryCodeSize (_s, OpType::Load, _start);
+				_start = m_left->GetBinaryCodeSize (_s, OpType::Store, _start);
+				return _start;
+			} else {
+				throw Exception::NotImplement ();
+			}
+		} else if (_type == OpType::Load) {
+			_start = m_left->GetBinaryCodeSize (_s, OpType::Store, _start);
+			_start = m_right->GetBinaryCodeSize (_s, OpType::Load, _start);
+			return _start + 1;
+		} else {
+			throw Exception::NotImplement ();
+		}
+	}
+
 	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
 		if (_type == OpType::None) {
 			if (m_op == "=") {

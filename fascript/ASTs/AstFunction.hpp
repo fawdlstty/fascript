@@ -26,6 +26,7 @@ class AstFunction: IAstExpr {
 public:
 	std::vector<std::string> Arguments;
 	std::vector<std::shared_ptr<IAstExpr>> Codes;
+	size_t CodeStart = 0;
 
 	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::FnExprContext *_ctx) {
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstFunction { _ctx });
@@ -35,19 +36,27 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstFunction { _ctx });
 	}
 
-	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
+	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
 		if (_type == OpType::Load) {
-			auto _func = std::make_shared<Function> ();
-			_func->ArgumentCount = Arguments.size ();
-			BinCode _bc1 {};
-			for (auto _code : Codes) {
-				if (_code)
-					_code->GenerateBinaryCode (_bc, _s, OpType::None);
+			// TODO 此处告知FAScript对象，有一个类需要单独编译
+			// TODO 此处改为只赋值
+			CodeStart = _start;
+			for (size_t i = 0; i < Codes.size (); ++i) {
+				_start = Codes [i]->GetBinaryCodeSize (_s, OpType::None, _start);
 			}
-			_func->Codes = _bc1.Dump ();
-			auto _func_id = _s.GetGlobalFuncId (_func);
-			_func->Id = _func_id;
-			_bc.LoadFunction (_func_id);
+			return _start - CodeStart;
+		} else {
+			throw Exception::NotImplement ();
+		}
+	}
+
+	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
+		if (_type == OpType::None) {
+			for (size_t i = 0; i < Codes.size (); ++i) {
+				Codes [i]->GenerateBinaryCode (_bc, _s, OpType::None);
+			}
+		} else if (_type == OpType::Load) {
+			// TODO 此处改为只赋值
 		} else {
 			throw Exception::NotImplement ();
 		}

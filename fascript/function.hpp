@@ -12,7 +12,6 @@ class Function {
 public:
 	uint16_t Id = 0;
 	size_t ArgumentCount = 0;
-	std::vector<uint8_t> Codes;
 };
 }
 
