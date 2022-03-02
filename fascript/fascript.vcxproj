@@ -179,6 +179,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ASTs\AstClass.hpp" />
     <ClInclude Include="ASTs\AstInvoke.hpp" />
     <ClInclude Include="ASTs\AstOp1.hpp" />
     <ClInclude Include="ASTs\AstAccess.hpp" />

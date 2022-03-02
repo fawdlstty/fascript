@@ -96,6 +96,9 @@
     <ClInclude Include="ASTs\AstReturn.hpp">
       <Filter>头文件\ASTs</Filter>
     </ClInclude>
+    <ClInclude Include="ASTs\AstClass.hpp">
+      <Filter>头文件\ASTs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="fascript.cpp">

@@ -28,6 +28,11 @@ Value FAScript::RunCode (std::string _code) {
 	std::unique_lock _ul { m_mtx, std::defer_lock };
 	_ul.lock ();
 	BinCode _bc;
+	size_t _start = 0;
+	for (auto _expr : _exprs) {
+		if (_expr)
+			_start += _expr->GetBinaryCodeSize (*this, OpType::None, _start);
+	}
 	for (auto _expr : _exprs) {
 		if (_expr)
 			_expr->GenerateBinaryCode (_bc, *this, OpType::None);
@@ -42,22 +47,56 @@ Value FAScript::RunCode (std::string _code) {
 
 
 
-uint16_t FAScript::GetGlobalNameId (std::string _name) {
+uint16_t FAScript::GetNameId (AstIdType _type, std::string _name) {
 	std::unique_lock _ul { m_mtx };
-	auto _p = m_name_to_id.find (_name);
-	if (_p != m_name_to_id.end ())
-		return _p->second;
+	if (_type == AstIdType::Global) {
+		auto _p = m_name_to_id.find (_name);
+		if (_p != m_name_to_id.end ())
+			return _p->second;
+		m_next_id++;
+		m_name_to_id [_name] = m_next_id;
+		return m_next_id;
+	} else if (_type == AstIdType::This) {
+		// TODO 找到最后一个class
+		for () {
+		}
+	} else if (_type == AstIdType::Local) {
+		//
+	} else if (_type == AstIdType::Argument) {
+		//
+	} else {
+		throw Exception::NotImplement ();
+	}
+}
+
+
+
+uint16_t FAScript::NewGlobalFuncId (std::shared_ptr<Function> _func) {
+	std::unique_lock _ul { m_mtx };
 	m_next_id++;
-	m_name_to_id [_name] = m_next_id;
+	m_id_to_func [m_next_id] = _func;
+	_func->Id = m_next_id;
 	return m_next_id;
 }
 
 
 
-uint16_t FAScript::GetGlobalFuncId (std::shared_ptr<Function> _func) {
-	std::unique_lock _ul { m_mtx };
-	m_next_id++;
-	m_id_to_func [m_next_id] = _func;
-	return m_next_id;
+AstIdType FAScript::CheckIdType (std::string _id) {
+	if (m_current_blocks.empty ()) {
+		return AstIdType::Global;
+	} else {
+		auto _p = m_current_blocks.rbegin ()->get ();
+		if (auto _pfunc = dynamic_cast<AstFunction *> (_p)) {
+			for (std::string _arg : _pfunc->Arguments) {
+				if (_arg == _id)
+					return AstIdType::Argument;
+			}
+			return AstIdType::Local;
+		} else if (auto _pclass = dynamic_cast<AstClass *> (_p)) {
+			return AstIdType::This;
+		} else {
+			throw Exception::NotImplement ();
+		}
+	}
 }
 }

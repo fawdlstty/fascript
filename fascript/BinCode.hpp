@@ -25,8 +25,38 @@ struct BinCode {
 		for (size_t i = 0; i < _val.size (); ++i)
 			m_data.push_back ((uint8_t) (_val [i]));
 	}
-	void LoadFunction (uint16_t _func_id) { m_data.push_back ((uint8_t) OpCode::LOAD_FUNC); _load_int (_func_id); }
-	void LoadGlobal (uint16_t _var_id) { m_data.push_back ((uint8_t) OpCode::LOAD_GLOBAL); _load_int (_var_id); }
+	void LoadFunction (uint16_t _func_id) {
+		m_data.push_back ((uint8_t) OpCode::LOAD_FUNC);
+		_load_int (_func_id);
+	}
+	void LoadVariable (AstIdType _type, uint16_t _var_id) {
+		if (_type == AstIdType::Global) {
+			m_data.push_back ((uint8_t) OpCode::LOAD_GLOBAL_VAR);
+		} else if (_type == AstIdType::This) {
+			m_data.push_back ((uint8_t) OpCode::LOAD_THIS_VAR);
+		} else if (_type == AstIdType::Argument) {
+			m_data.push_back ((uint8_t) OpCode::LOAD_ARG_VAR);
+		} else if (_type == AstIdType::Local) {
+			m_data.push_back ((uint8_t) OpCode::LOAD_LOCAL_VAR);
+		} else {
+			throw Exception::NotImplement ();
+		}
+		_load_int (_var_id);
+	}
+	void StoreVariable (AstIdType _type, uint16_t _var_id) {
+		if (_type == AstIdType::Global) {
+			m_data.push_back ((uint8_t) OpCode::STORE_GLOBA_VAR);
+		} else if (_type == AstIdType::This) {
+			m_data.push_back ((uint8_t) OpCode::STORE_THIS_VAR);
+		} else if (_type == AstIdType::Argument) {
+			m_data.push_back ((uint8_t) OpCode::STORE_ARG_VAR);
+		} else if (_type == AstIdType::Local) {
+			m_data.push_back ((uint8_t) OpCode::STORE_LOCAL_VAR);
+		} else {
+			throw Exception::NotImplement ();
+		}
+		_load_int (_var_id);
+	}
 	void Return (bool _load) { m_data.push_back ((uint8_t) (_load ? OpCode::RET_VAL : OpCode::RET)); }
 	void DoOp2 (std::string _op) {
 		if (_op.size () == 1) {

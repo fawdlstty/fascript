@@ -21,7 +21,7 @@ public:
 
 	static std::shared_ptr<IAstExpr> MakePoint (std::shared_ptr<IAstExpr> _left, std::string _right) {
 		if (auto _left_p = dynamic_cast<AstId *> (_left.get ())) {
-			if (_left_p->m_name == "this" && _left_p->m_type == AstIdType::Normal) {
+			if (_left_p->m_name == "this" && _left_p->m_type == AstIdType::Unknown) {
 				_left_p->m_name = _right;
 				_left_p->m_type = AstIdType::This;
 				return _left;

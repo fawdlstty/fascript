@@ -8,34 +8,44 @@
 
 
 namespace fas {
-enum class AstIdType { Normal = 0, Global = 1, This = 2 };
-
-
-
 class AstId: IAstExpr {
 	AstId (std::string _name, AstIdType _type): m_name (_name), m_type (_type) {}
 
 public:
 	std::string m_name;
 	AstIdType m_type;
+	uint16_t m_var_id = 0;
 
 	static std::shared_ptr<IAstExpr> FromName (std::string _id) {
-		AstIdType Type = AstIdType::Normal;
+		//AstIdType Type = AstIdType::Normal;
 		if (_id.size () > 2 && _id.substr (0, 2) == "::") {
 			return std::shared_ptr<IAstExpr> ((IAstExpr*) new AstId { _id.substr (2), AstIdType::Global });
 		} else if (_id.size () > 5 && _id.substr (0, 5) == "this.") {
 			return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstId { _id.substr (5), AstIdType::This });
 		} else {
-			return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstId { _id, AstIdType::Normal });
+			return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstId { _id, AstIdType::Unknown });
 		}
 	}
 
 	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
+		if (_type == OpType::Load || _type == OpType::Store)
+			return 3;
 		throw Exception::NotImplement ();
 	}
 
 	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
-		throw Exception::NotImplement ();
+		if (m_type == AstIdType::Unknown)
+			m_type = _s.CheckIdType (m_name);
+		if (m_var_id == 0)
+			m_var_id = _s.GetNameId (m_type, m_name);
+
+		if (_type == OpType::Load) {
+			_bc.LoadVariable (m_type, m_var_id);
+		} else if (_type == OpType::Store) {
+			_bc.StoreVariable (m_type, m_var_id);
+		} else {
+			throw Exception::NotImplement ();
+		}
 	}
 
 	bool AllowAddAddSubSub () override { return true; }

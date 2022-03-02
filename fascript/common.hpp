@@ -27,6 +27,9 @@ class FAScript;
 
 
 
+// ast id 类型
+enum class AstIdType { Unknown, Global, This, Local, Argument };
+
 // opcode 操作方式
 enum class OpType { None, Load, Store };
 

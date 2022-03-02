@@ -24,6 +24,8 @@ class AstFunction: IAstExpr {
 	}
 
 public:
+	bool m_registered = false;
+	uint16_t FuncId = 0;
 	std::vector<std::string> Arguments;
 	std::vector<std::shared_ptr<IAstExpr>> Codes;
 	size_t CodeStart = 0;
@@ -37,14 +39,18 @@ public:
 	}
 
 	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
-		if (_type == OpType::Load) {
-			// TODO 此处告知FAScript对象，有一个类需要单独编译
-			// TODO 此处改为只赋值
+		if (_type == OpType::None) {
 			CodeStart = _start;
 			for (size_t i = 0; i < Codes.size (); ++i) {
 				_start = Codes [i]->GetBinaryCodeSize (_s, OpType::None, _start);
 			}
 			return _start - CodeStart;
+		} else if (_type == OpType::Load) {
+			if (!m_registered) {
+				m_registered = true;
+				_s.RegisterUncompiledFunc (shared_from_this ());
+			}
+			return 3;
 		} else {
 			throw Exception::NotImplement ();
 		}
@@ -56,7 +62,9 @@ public:
 				Codes [i]->GenerateBinaryCode (_bc, _s, OpType::None);
 			}
 		} else if (_type == OpType::Load) {
-			// TODO 此处改为只赋值
+			if (FuncId == 0)
+				FuncId = _s.NewGlobalFuncId (std::shared_ptr<Function> (new Function { .Id = 0, .ArgumentCount = Arguments.size () }));
+			_bc.LoadFunction (FuncId);
 		} else {
 			throw Exception::NotImplement ();
 		}

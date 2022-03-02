@@ -20,7 +20,7 @@ public:
 
 	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
 		if (_type == OpType::None) {
-			return 1 + (m_expr ? m_expr->GetBinaryCodeSize (OpType::Load, _start) : 0);
+			return 1 + (m_expr ? m_expr->GetBinaryCodeSize (_s, OpType::Load, _start) : 0);
 		} else {
 			throw Exception::NotImplement ();
 		}

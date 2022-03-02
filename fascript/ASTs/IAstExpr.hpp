@@ -10,7 +10,7 @@
 
 
 namespace fas {
-class IAstExpr {
+class IAstExpr: public std::enable_shared_from_this<IAstExpr> {
 public:
 	antlr4::Token *m_token = nullptr;
 
@@ -33,6 +33,7 @@ public:
 
 
 #include "AstAccess.hpp"
+#include "AstClass.hpp"
 #include "AstFunction.hpp"
 #include "AstId.hpp"
 #include "AstInvoke.hpp"
