@@ -10,7 +10,7 @@
 namespace fas {
 class Function {
 public:
-	uint16_t Id = 0;
+	int32_t Id = 0;
 	size_t ArgumentCount = 0;
 };
 }

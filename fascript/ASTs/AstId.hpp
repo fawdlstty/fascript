@@ -14,14 +14,12 @@ class AstId: IAstExpr {
 public:
 	std::string m_name;
 	AstIdType m_type;
-	uint16_t m_var_id = 0;
+	int32_t m_var_id = -1;
 
 	static std::shared_ptr<IAstExpr> FromName (std::string _id) {
 		//AstIdType Type = AstIdType::Normal;
 		if (_id.size () > 2 && _id.substr (0, 2) == "::") {
 			return std::shared_ptr<IAstExpr> ((IAstExpr*) new AstId { _id.substr (2), AstIdType::Global });
-		} else if (_id.size () > 5 && _id.substr (0, 5) == "this.") {
-			return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstId { _id.substr (5), AstIdType::This });
 		} else {
 			return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstId { _id, AstIdType::Unknown });
 		}
@@ -29,14 +27,14 @@ public:
 
 	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
 		if (_type == OpType::Load || _type == OpType::Store)
-			return 3;
+			return 5;
 		throw Exception::NotImplement ();
 	}
 
 	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
 		if (m_type == AstIdType::Unknown)
 			m_type = _s.CheckIdType (m_name);
-		if (m_var_id == 0)
+		if (m_var_id == -1)
 			m_var_id = _s.GetNameId (m_type, m_name);
 
 		if (_type == OpType::Load) {

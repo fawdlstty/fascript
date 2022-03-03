@@ -15,8 +15,8 @@
 
 
 int main () {
-	fas::FAScript _s {};
-	_s.RunCode (R"(
+	auto _s = std::make_shared<fas::FAScript> ();
+	_s->RunCode (R"(
 fn test (a) {
 	return a+1
 }

@@ -10,16 +10,15 @@ enum class OpCode {
 	LOAD_BOOL,			// 载入一个 bool 类型值，后接1字节具体值
 	LOAD_INT64,			// 载入一个 int64 类型值，后接8字节具体值
 	LOAD_FLOAT64,		// 载入一个 double 类型值，后接8字节具体值
-	LOAD_STR16,			// 载入一个 std::string 类型值，后接2字节长度及内容
-	LOAD_STR32,			// 载入一个 std::string 类型值，后接4字节长度及内容
-	LOAD_FUNC,			// 载入一个函数类型值，后接2字节长度函数id
-	LOAD_GLOBAL_VAR,	// 载入一个全局变量值，后接2字节ID
-	LOAD_THIS_VAR,		// 载入一个象成员变量值，后接2字节ID
-	LOAD_ARG_VAR,		// 载入一个参数值，后接2字节index
-	LOAD_LOCAL_VAR,		// 载入一个局部变量值，后接2字节ID
+	LOAD_STRING,		// 载入一个 std::string 类型值，后接4字节长度及内容
+	LOAD_FUNC,			// 载入一个函数类型值，后接4字节长度函数id
+	LOAD_GLOBAL_VAR,	// 载入一个全局变量值，后接4字节ID
+	LOAD_MEMBER_VAR,	// 载入一个象成员变量值，后接4字节ID
+	LOAD_ARG_VAR,		// 载入一个参数值，后接4字节index
+	LOAD_LOCAL_VAR,		// 载入一个局部变量值，后接4字节ID
 	LOAD_VARIABLE,		// 载入一个局部变量值
 	STORE_GLOBA_VAR,	// 存档一个值至全局变量
-	STORE_THIS_VAR,	// 存档一个值至对象成员变量
+	STORE_MEMBER_VAR,	// 存档一个值至对象成员变量
 	STORE_ARG_VAR,		// 存档一个值至参数
 	STORE_LOCAL_VAR,	// 存档一个值至局部变量
 	STORE,				// 存档一个值（忽略）

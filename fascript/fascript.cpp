@@ -47,23 +47,28 @@ Value FAScript::RunCode (std::string _code) {
 
 
 
-uint16_t FAScript::GetNameId (AstIdType _type, std::string _name) {
+int32_t FAScript::GetNameId (AstIdType _type, std::string _name) {
 	std::unique_lock _ul { m_mtx };
-	if (_type == AstIdType::Global) {
+	if (_type == AstIdType::Global || _type == AstIdType::Member || _type == AstIdType::Local) {
 		auto _p = m_name_to_id.find (_name);
 		if (_p != m_name_to_id.end ())
 			return _p->second;
 		m_next_id++;
 		m_name_to_id [_name] = m_next_id;
 		return m_next_id;
-	} else if (_type == AstIdType::This) {
-		// TODO 找到最后一个class
-		for () {
-		}
-	} else if (_type == AstIdType::Local) {
-		//
 	} else if (_type == AstIdType::Argument) {
-		//
+		// 找到最后一个 func
+		for (auto _i = m_current_blocks.rbegin (); _i != m_current_blocks.rend (); ++_i) {
+			if (auto _pclass = dynamic_cast<AstFunction *> (_i->get ())) {
+				for (size_t i = 0; i < _pclass->Arguments.size (); ++i) {
+					if (_pclass->Arguments[i] == _name)
+						return (int32_t) i;
+				}
+			}
+		}
+
+		// 找不到则抛异常
+		throw Exception::NotImplement ();
 	} else {
 		throw Exception::NotImplement ();
 	}
@@ -71,7 +76,7 @@ uint16_t FAScript::GetNameId (AstIdType _type, std::string _name) {
 
 
 
-uint16_t FAScript::NewGlobalFuncId (std::shared_ptr<Function> _func) {
+int32_t FAScript::NewGlobalFuncId (std::shared_ptr<Function> _func) {
 	std::unique_lock _ul { m_mtx };
 	m_next_id++;
 	m_id_to_func [m_next_id] = _func;
@@ -93,7 +98,7 @@ AstIdType FAScript::CheckIdType (std::string _id) {
 			}
 			return AstIdType::Local;
 		} else if (auto _pclass = dynamic_cast<AstClass *> (_p)) {
-			return AstIdType::This;
+			return AstIdType::Member;
 		} else {
 			throw Exception::NotImplement ();
 		}

@@ -25,8 +25,8 @@ class AstFunction: IAstExpr {
 
 public:
 	bool m_registered = false;
-	uint16_t FuncId = 0;
-	std::vector<std::string> Arguments;
+	uint32_t FuncId = 0;
+	std::vector<std::string> Arguments { "this" };
 	std::vector<std::shared_ptr<IAstExpr>> Codes;
 	size_t CodeStart = 0;
 

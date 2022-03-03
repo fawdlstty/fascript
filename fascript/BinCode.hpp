@@ -15,25 +15,15 @@ struct BinCode {
 	void LoadInt64 (int64_t _val) { m_data.push_back ((uint8_t) OpCode::LOAD_INT64); _load_int (_val); }
 	void LoadFloat64 (double _val) { m_data.push_back ((uint8_t) OpCode::LOAD_FLOAT64); _load_float64 (_val); }
 	void LoadString (std::string _val) {
-		if (_val.size () >= 65536) {
-			m_data.push_back ((uint8_t) OpCode::LOAD_STR32);
-			_load_int ((uint32_t) _val.size ());
-		} else {
-			m_data.push_back ((uint8_t) OpCode::LOAD_STR16);
-			_load_int ((uint16_t) _val.size ());
-		}
+		m_data.push_back ((uint8_t) OpCode::LOAD_STRING);
+		_load_int ((int32_t) _val.size ());
 		for (size_t i = 0; i < _val.size (); ++i)
 			m_data.push_back ((uint8_t) (_val [i]));
 	}
-	void LoadFunction (uint16_t _func_id) {
-		m_data.push_back ((uint8_t) OpCode::LOAD_FUNC);
-		_load_int (_func_id);
-	}
-	void LoadVariable (AstIdType _type, uint16_t _var_id) {
+	void LoadFunction (int32_t _func_id) { m_data.push_back ((uint8_t) OpCode::LOAD_FUNC); _load_int (_func_id); }
+	void LoadVariable (AstIdType _type, int32_t _var_id) {
 		if (_type == AstIdType::Global) {
 			m_data.push_back ((uint8_t) OpCode::LOAD_GLOBAL_VAR);
-		} else if (_type == AstIdType::This) {
-			m_data.push_back ((uint8_t) OpCode::LOAD_THIS_VAR);
 		} else if (_type == AstIdType::Argument) {
 			m_data.push_back ((uint8_t) OpCode::LOAD_ARG_VAR);
 		} else if (_type == AstIdType::Local) {
@@ -43,11 +33,9 @@ struct BinCode {
 		}
 		_load_int (_var_id);
 	}
-	void StoreVariable (AstIdType _type, uint16_t _var_id) {
+	void StoreVariable (AstIdType _type, int32_t _var_id) {
 		if (_type == AstIdType::Global) {
 			m_data.push_back ((uint8_t) OpCode::STORE_GLOBA_VAR);
-		} else if (_type == AstIdType::This) {
-			m_data.push_back ((uint8_t) OpCode::STORE_THIS_VAR);
 		} else if (_type == AstIdType::Argument) {
 			m_data.push_back ((uint8_t) OpCode::STORE_ARG_VAR);
 		} else if (_type == AstIdType::Local) {
@@ -74,7 +62,7 @@ struct BinCode {
 
 private:
 	union DataType2 { uint8_t uint8 [2]; int16_t int16; uint16_t uint16; };
-	union DataType4 { uint8_t uint8 [4]; uint32_t uint32; };
+	union DataType4 { uint8_t uint8 [4]; int32_t int32; uint32_t uint32; };
 	union DataType8 { uint8_t uint8 [8]; int64_t int64; uint64_t uint64; double float64; };
 
 	template<OpIntType T>
