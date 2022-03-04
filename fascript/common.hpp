@@ -53,6 +53,13 @@ using ValueData = std::variant<std::nullopt_t, bool, int64_t, double, std::strin
 
 
 
+// 整数类型
+union IntDataType2 { uint8_t uint8 [2]; int16_t int16; uint16_t uint16; };
+union IntDataType4 { uint8_t uint8 [4]; int32_t int32; uint32_t uint32; };
+union IntDataType8 { uint8_t uint8 [8]; int64_t int64; uint64_t uint64; double float64; };
+
+
+
 // 存档类型
 template<typename T>
 concept AllowedCppType = std::is_same<T, bool>::value

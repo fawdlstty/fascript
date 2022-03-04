@@ -4,23 +4,26 @@
 
 
 #include "IAstExpr.hpp"
+#include "AstReturn.hpp"
+#include "AstValue.hpp"
 
 
 
 namespace fas {
-class AstFunction: IAstExpr {
-	AstFunction (FAScriptParser::FnExprContext *_ctx) {
-		auto _ids = _ctx->Id ();
-		for (size_t i = 0; i < _ids.size (); ++i)
-			Arguments.push_back (_ids [i]->getText ());
-		Codes = IAstExpr::FromCtxs (_ctx->stmt ());
-	}
+template<typename T>
+concept FnContext = std::is_same<T, FAScriptParser::FnExprContext>::value || std::is_same<T, FAScriptParser::FnStmtContext>::value;
 
-	AstFunction (FAScriptParser::FnStmtContext *_ctx) {
-		auto _ids = _ctx->Id ();
-		for (size_t i = 1; i < _ids.size (); ++i)
+
+
+class AstFunction: IAstExpr {
+	template<FnContext T>
+	AstFunction (T *_ctx) {
+		std::vector<antlr4::tree::TerminalNode *> _ids = _ctx->Id ();
+		constexpr size_t _start = std::is_same<T, FAScriptParser::FnExprContext>::value ? 0 : 1;
+		for (size_t i = _start; i < _ids.size (); ++i)
 			Arguments.push_back (_ids [i]->getText ());
 		Codes = IAstExpr::FromCtxs (_ctx->stmt ());
+		Codes.push_back (AstReturn::Make (AstValue::FromNull ()));
 	}
 
 public:
@@ -40,6 +43,13 @@ public:
 
 	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
 		if (_type == OpType::None) {
+			for (size_t i = 0; i < Codes.size (); ++i) {
+				if (!Codes [i]) {
+					Codes.erase (Codes.begin () + i);
+					--i;
+				}
+			}
+
 			CodeStart = _start;
 			for (size_t i = 0; i < Codes.size (); ++i) {
 				_start = Codes [i]->GetBinaryCodeSize (_s, OpType::None, _start);

@@ -20,6 +20,7 @@ int main () {
 fn test (a) {
 	return a+1
 }
+test (3)
 )");
 	std::cout << "Hello World!\n";
 	return 0;

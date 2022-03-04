@@ -58,27 +58,23 @@ struct BinCode {
 		}
 		throw Exception::NotImplement ();
 	}
-	std::vector<uint8_t> Dump () { return m_data; }
+	std::vector<uint8_t> &Dump () { return m_data; }
 
 private:
-	union DataType2 { uint8_t uint8 [2]; int16_t int16; uint16_t uint16; };
-	union DataType4 { uint8_t uint8 [4]; int32_t int32; uint32_t uint32; };
-	union DataType8 { uint8_t uint8 [8]; int64_t int64; uint64_t uint64; double float64; };
-
 	template<OpIntType T>
 	void _load_int (T _val) {
 		if constexpr (std::is_same<T, int8_t>::value) { m_data.push_back ((uint8_t) _val); }
 		else if constexpr (std::is_same<T, uint8_t>::value) { m_data.push_back (_val); }
-		else if constexpr (std::is_same<T, int16_t>::value) { DataType2 _d { .int16 = _val, }; m_data.push_back (_d.uint8 [0]); m_data.push_back (_d.uint8 [1]); }
-		else if constexpr (std::is_same<T, uint16_t>::value) { DataType2 _d { .uint16 = _val, }; m_data.push_back (_d.uint8 [0]); m_data.push_back (_d.uint8 [1]); }
-		else if constexpr (std::is_same<T, int32_t>::value) { DataType4 _d { .int32 = _val, }; for (size_t i = 0; i < 4; ++i) m_data.push_back (_d.uint8 [i]); }
-		else if constexpr (std::is_same<T, uint32_t>::value) { DataType4 _d { .uint32 = _val, }; for (size_t i = 0; i < 4; ++i) m_data.push_back (_d.uint8 [i]); }
-		else if constexpr (std::is_same<T, int64_t>::value) { DataType8 _d { .int64 = _val, }; for (size_t i = 0; i < 8; ++i) m_data.push_back (_d.uint8 [i]); }
-		else if constexpr (std::is_same<T, uint64_t>::value) { DataType8 _d { .uint64 = _val, }; for (size_t i = 0; i < 8; ++i) m_data.push_back (_d.uint8 [i]); }
+		else if constexpr (std::is_same<T, int16_t>::value) { IntDataType2 _d { .int16 = _val, }; m_data.push_back (_d.uint8 [0]); m_data.push_back (_d.uint8 [1]); }
+		else if constexpr (std::is_same<T, uint16_t>::value) { IntDataType2 _d { .uint16 = _val, }; m_data.push_back (_d.uint8 [0]); m_data.push_back (_d.uint8 [1]); }
+		else if constexpr (std::is_same<T, int32_t>::value) { IntDataType4 _d { .int32 = _val, }; for (size_t i = 0; i < 4; ++i) m_data.push_back (_d.uint8 [i]); }
+		else if constexpr (std::is_same<T, uint32_t>::value) { IntDataType4 _d { .uint32 = _val, }; for (size_t i = 0; i < 4; ++i) m_data.push_back (_d.uint8 [i]); }
+		else if constexpr (std::is_same<T, int64_t>::value) { IntDataType8 _d { .int64 = _val, }; for (size_t i = 0; i < 8; ++i) m_data.push_back (_d.uint8 [i]); }
+		else if constexpr (std::is_same<T, uint64_t>::value) { IntDataType8 _d { .uint64 = _val, }; for (size_t i = 0; i < 8; ++i) m_data.push_back (_d.uint8 [i]); }
 		else { static_assert (false, "未处理的整数类型"); }
 	}
 
-	void _load_float64 (double _val) { DataType8 _d { .float64 = _val, }; for (size_t i = 0; i < 8; ++i) m_data.push_back (_d.uint8 [i]); }
+	void _load_float64 (double _val) { IntDataType8 _d { .float64 = _val, }; for (size_t i = 0; i < 8; ++i) m_data.push_back (_d.uint8 [i]); }
 
 	std::vector<uint8_t> m_data;
 

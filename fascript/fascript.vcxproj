@@ -193,6 +193,7 @@
     <ClInclude Include="BinCode.hpp" />
     <ClInclude Include="common.hpp" />
     <ClInclude Include="exception.hpp" />
+    <ClInclude Include="executor.hpp" />
     <ClInclude Include="fascript.hpp" />
     <ClInclude Include="fasvisitor.hpp" />
     <ClInclude Include="function.hpp" />

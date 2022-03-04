@@ -5,17 +5,19 @@
 
 #include "value.hpp"
 #include "function.hpp"
+#include "BinCode.hpp"
 
 
 
 namespace fas {
 class IAstExpr;
 
-class FAScript: std::enable_shared_from_this<FAScript> {
+class FAScript: public std::enable_shared_from_this<FAScript> {
 public:
 	Value RunCode (std::string _code);
 	int32_t GetNameId (AstIdType _type, std::string _name);
 	int32_t NewGlobalFuncId (std::shared_ptr<Function> _func);
+	std::shared_ptr<Function> GetFuncFromId (int32_t _func_id);
 
 	// ×¢²á´ý±àÒëº¯Êý
 	void RegisterUncompiledFunc (std::shared_ptr<IAstExpr> _ast_func) { m_uncompiled_funcs.push_back (_ast_func); }
@@ -27,15 +29,17 @@ public:
 
 private:
 	std::recursive_mutex m_mtx;
-	std::map<std::string, int32_t> m_name_to_id;
-	std::map<int32_t, Value> m_id_to_var;
+	BinCode m_bc {};
 
+	std::map<std::string, int32_t> m_name_to_id;
 	int32_t m_next_id = 0;
 
-	std::vector<std::shared_ptr<IAstExpr>> m_uncompiled_funcs;
+	std::map<int32_t, Value> m_global_vars;
+
 	std::map<int32_t, std::shared_ptr<Function>> m_id_to_func;
 	int32_t m_next_func_id = 0;
 
+	std::vector<std::shared_ptr<IAstExpr>> m_uncompiled_funcs;
 	std::vector<std::shared_ptr<IAstExpr>> m_current_blocks;
 };
 }

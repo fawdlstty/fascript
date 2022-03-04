@@ -12,9 +12,11 @@ namespace fas {
 class Value {
 public:
 	explicit Value (std::shared_ptr<FAScript> _s);
+	explicit Value (std::shared_ptr<FAScript> _s, bool _val);
 	explicit Value (std::shared_ptr<FAScript> _s, int64_t _val);
 	explicit Value (std::shared_ptr<FAScript> _s, double _val);
 	explicit Value (std::shared_ptr<FAScript> _s, std::string _val);
+	explicit Value (std::shared_ptr<FAScript> _s, std::shared_ptr<Function> _val);
 	explicit Value (std::shared_ptr<FAScript> _s, std::vector<Value> _val);
 	explicit Value (std::shared_ptr<FAScript> _s, std::map<MapKey, Value> _val);
 	Value (const Value &_o);
@@ -27,7 +29,7 @@ public:
 	Value operator[] (int64_t _val);
 	Value operator[] (std::string _val);
 
-	template<typename T>
+	template<AllowedCppType T>
 	operator T();
 
 private:

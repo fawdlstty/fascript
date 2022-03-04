@@ -7,7 +7,7 @@
 #include "FASVisitor.hpp"
 #include "ASTs/IAstExpr.hpp"
 #include "exception.hpp"
-#include "BinCode.hpp"
+#include "executor.hpp"
 
 #pragma comment (lib, "antlr4-runtime.lib")
 
@@ -23,25 +23,54 @@ Value FAScript::RunCode (std::string _code) {
 	FAScriptParser _parser { &_cts };
 	fas::FASVisitor _visitor {};
 
+	// 获取代码执行位置
+	Executor _exec { shared_from_this (), m_bc.Dump (), _code.size () };
+
 	// 编译代码
 	std::vector<std::shared_ptr<IAstExpr>> _exprs = _visitor.visit (_parser.program ()).as<std::vector<std::shared_ptr<IAstExpr>>> ();
 	std::unique_lock _ul { m_mtx, std::defer_lock };
 	_ul.lock ();
-	BinCode _bc;
+
+	// 忽略空语句
+	for (size_t i = 0; i < _exprs.size (); ++i) {
+		if (!_exprs [i]) {
+			_exprs.erase (_exprs.begin () + i);
+			--i;
+		}
+	}
+
+	// 最后一个语句改为return
+	size_t _last_index = _exprs.size ();
+	if (_last_index == 0)
+		return Value { shared_from_this () };
+	_last_index--;
+	auto _last_ret = dynamic_cast<AstReturn*> (_exprs [_last_index].get ());
+	if (!_last_ret)
+		_exprs [_last_index] = AstReturn::Make (_exprs [_last_index]);
+
+	// 初步计算长度
 	size_t _start = 0;
-	for (auto _expr : _exprs) {
-		if (_expr)
-			_start += _expr->GetBinaryCodeSize (*this, OpType::None, _start);
-	}
-	for (auto _expr : _exprs) {
-		if (_expr)
-			_expr->GenerateBinaryCode (_bc, *this, OpType::None);
+	for (size_t i = 0; i < _exprs.size (); ++i) {
+		_start += _exprs [i]->GetBinaryCodeSize (*this, OpType::None, _start);
 	}
 
-	// TODO 执行代码
+	// 计算函数代码长度
+	for (size_t i = 0; i < m_uncompiled_funcs.size (); ++i) {
+		_start += m_uncompiled_funcs [i]->GetBinaryCodeSize (*this, OpType::None, _start);
+	}
 
-	// 执行栈
-	//auto _stack = std::make_shared<std::vector<Value>> ();
+	// 编译代码
+	for (auto _expr : _exprs) {
+		_expr->GenerateBinaryCode (m_bc, *this, OpType::None);
+	}
+
+	// 编译函数代码
+	for (size_t i = 0; i < m_uncompiled_funcs.size (); ++i) {
+		m_uncompiled_funcs [i]->GenerateBinaryCode (m_bc, *this, OpType::None);
+	}
+
+	// 执行代码
+	_exec.Exec ();
 	return Value { shared_from_this () };
 }
 
@@ -82,6 +111,14 @@ int32_t FAScript::NewGlobalFuncId (std::shared_ptr<Function> _func) {
 	m_id_to_func [m_next_id] = _func;
 	_func->Id = m_next_id;
 	return m_next_id;
+}
+
+
+
+std::shared_ptr<Function> FAScript::GetFuncFromId (int32_t _func_id) {
+	std::unique_lock _ul { m_mtx };
+	auto _p = m_id_to_func.find (_func_id);
+	return _p != m_id_to_func.end () ? _p->second : nullptr;
 }
 
 

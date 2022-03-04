@@ -46,13 +46,19 @@ public:
 	}
 
 	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
-		if (_type == OpType::None) {
-			if (m_op == "=") {
-				m_right->GenerateBinaryCode (_bc, _s, OpType::Load);
-				m_left->GenerateBinaryCode (_bc, _s, OpType::Store);
-			} else {
+		if (m_op == "=") {
+			m_right->GenerateBinaryCode (_bc, _s, OpType::Load);
+			m_left->GenerateBinaryCode (_bc, _s, OpType::Store);
+			if (_type == OpType::Load) {
+				m_left->GenerateBinaryCode (_bc, _s, OpType::Load);
+			} else if (_type == OpType::Store) {
 				throw Exception::NotImplement ();
 			}
+			return;
+		}
+
+		if (_type == OpType::None) {
+			throw Exception::NotImplement ();
 		} else if (_type == OpType::Load) {
 			m_right->GenerateBinaryCode (_bc, _s, OpType::Load);
 			m_left->GenerateBinaryCode (_bc, _s, OpType::Load);
