@@ -73,7 +73,7 @@ public:
 			}
 		} else if (_type == OpType::Load) {
 			if (FuncId == 0)
-				FuncId = _s.NewGlobalFuncId (std::shared_ptr<Function> (new Function { .Id = 0, .ArgumentCount = Arguments.size () }));
+				FuncId = _s.NewGlobalFuncId (std::make_shared<Function> (0, Arguments.size (), CodeStart));
 			_bc.LoadFunction (FuncId);
 		} else {
 			throw Exception::NotImplement ();

@@ -109,7 +109,7 @@ int32_t FAScript::NewGlobalFuncId (std::shared_ptr<Function> _func) {
 	std::unique_lock _ul { m_mtx };
 	m_next_id++;
 	m_id_to_func [m_next_id] = _func;
-	_func->Id = m_next_id;
+	_func->m_id = m_next_id;
 	return m_next_id;
 }
 

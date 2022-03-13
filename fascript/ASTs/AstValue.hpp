@@ -66,7 +66,7 @@ public:
 			case 2: _bc.LoadInt64 (std::get<int64_t> (m_data)); break;
 			case 3: _bc.LoadFloat64 (std::get<double> (m_data)); break;
 			case 4: _bc.LoadString (std::get<std::string> (m_data)); break;
-			case 5: _bc.LoadFunction (std::get<std::shared_ptr<Function>> (m_data)->Id); break;
+			case 5: _bc.LoadFunction (std::get<std::shared_ptr<Function>> (m_data)->m_id); break;
 			default: throw Exception::NotImplement ();
 			}
 		} else {
