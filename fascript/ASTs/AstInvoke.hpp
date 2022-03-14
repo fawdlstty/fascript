@@ -20,11 +20,29 @@ public:
 	}
 
 	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
-		throw Exception::NotImplement ();
+		if (_type == OpType::Load || _type == OpType::None) {
+			size_t _size = 0;
+			for (size_t i = 0; i < m_args.size (); ++i) {
+				_size += m_args [i]->GetBinaryCodeSize (_s, OpType::Load, _start + _size);
+			}
+			return _size + (_type == OpType::None ? 7 : 6);
+		} else {
+			throw Exception::NotImplement ();
+		}
 	}
 
 	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
-		throw Exception::NotImplement ();
+		if (_type == OpType::Load || _type == OpType::None) {
+			for (size_t i = 0; i < m_args.size (); ++i) {
+				m_args [i]->GenerateBinaryCode (_bc, _s, OpType::Load);
+			}
+			m_func->GenerateBinaryCode (_bc, _s, OpType::Load);
+			_bc.GoTo ();
+			if (_type == OpType::None)
+				_bc.Ignore ();
+		} else {
+			throw Exception::NotImplement ();
+		}
 	}
 };
 }

@@ -36,7 +36,7 @@ public:
 			case OpCode::STORE_MEMBER_VAR: break;
 			case OpCode::STORE_ARG_VAR: break;
 			case OpCode::STORE_LOCAL_VAR: break;
-			case OpCode::STORE: break;
+			case OpCode::IGNORE: break;
 			case OpCode::LOAD_MEMBER_ID: break;
 			case OpCode::LOAD_MEMBER_NAME: break;
 			case OpCode::LOAD_MEMBER_IMMNUM: break;
@@ -53,9 +53,9 @@ public:
 			case OpCode::MUL: break;
 			case OpCode::DIV: break;
 			case OpCode::MOD: break;
-			case OpCode::INVOKE: break;
+			case OpCode::LOAD_POS: break;
+			case OpCode::GOTO: break;
 			case OpCode::RET: break;
-			case OpCode::RET_VAL: break;
 			}
 		}
 	}

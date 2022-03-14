@@ -28,7 +28,7 @@ class AstFunction: IAstExpr {
 
 public:
 	bool m_registered = false;
-	uint32_t FuncId = 0;
+	int32_t m_func_id = 0;
 	std::vector<std::string> Arguments { "this" };
 	std::vector<std::shared_ptr<IAstExpr>> Codes;
 	size_t CodeStart = 0;
@@ -72,9 +72,9 @@ public:
 				Codes [i]->GenerateBinaryCode (_bc, _s, OpType::None);
 			}
 		} else if (_type == OpType::Load) {
-			if (FuncId == 0)
-				FuncId = _s.NewGlobalFuncId (std::make_shared<Function> (0, Arguments.size (), CodeStart));
-			_bc.LoadFunction (FuncId);
+			if (m_func_id == 0)
+				m_func_id = _s.NewGlobalFuncId (std::make_shared<Function> (0, Arguments.size (), CodeStart));
+			_bc.LoadFunction (m_func_id);
 		} else {
 			throw Exception::NotImplement ();
 		}

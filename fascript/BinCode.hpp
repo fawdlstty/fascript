@@ -45,7 +45,9 @@ struct BinCode {
 		}
 		_load_int (_var_id);
 	}
-	void Return (bool _load) { m_data.push_back ((uint8_t) (_load ? OpCode::RET_VAL : OpCode::RET)); }
+	void GoTo () { m_data.push_back ((uint8_t) OpCode::GOTO); }
+	void Ignore () { m_data.push_back ((uint8_t) OpCode::IGNORE); }
+	void Return () { m_data.push_back ((uint8_t) OpCode::RET); }
 	void DoOp2 (std::string _op) {
 		if (_op.size () == 1) {
 			switch (_op [0]) {

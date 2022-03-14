@@ -21,7 +21,7 @@ enum class OpCode {
 	STORE_MEMBER_VAR,		// 存档一个值至对象成员变量
 	STORE_ARG_VAR,			// 存档一个值至参数
 	STORE_LOCAL_VAR,		// 存档一个值至局部变量
-	STORE,					// 存档一个值（忽略）
+	IGNORE,					// 忽略一个值
 
 	// 访问成员
 	LOAD_MEMBER_ID,			// 载入对象的某个已获取ID的成员，后接2字节ID	载入对象成员调用顺序示例：LOAD_GLOBAL、LOAD_MEM_ID 具体ID
@@ -44,9 +44,9 @@ enum class OpCode {
 	MOD,					// 算术取余运算（2->1）
 
 	// 函数调用
-	INVOKE,					// 压入当前执行位置（4字节）并调用函数（顺序：从左至右将参数压栈，然后压函数ID，最后INVOKE）
-	RET,					// 函数返回，恢复现场
-	RET_VAL,				// 函数返回，恢复现场，并附带一个返回值
+	LOAD_POS,				// 压入目标位置（4字节）
+	GOTO,					// 跳转到指地址
+	RET,					// 函数返回，恢复现场，并附带一个返回值（相当于缓存栈顶，弹出参数，JMP，再恢复栈顶）
 
 	OPCODE_END,				// 最后一个操作数，用于静态校验操作数长度不超255
 };
