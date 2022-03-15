@@ -24,7 +24,7 @@ Value FAScript::RunCode (std::string _code) {
 	fas::FASVisitor _visitor {};
 
 	// 获取代码执行位置
-	Executor _exec { shared_from_this (), m_bc.Dump (), _code.size () };
+	Executor _exec { shared_from_this (), m_bc.Dump (), 0/*(int32_t) _code.size ()*/ };
 
 	// 编译代码
 	std::vector<std::shared_ptr<IAstExpr>> _exprs = _visitor.visit (_parser.program ()).as<std::vector<std::shared_ptr<IAstExpr>>> ();
@@ -140,5 +140,19 @@ AstIdType FAScript::CheckIdType (std::string _id) {
 			throw Exception::NotImplement ();
 		}
 	}
+}
+
+
+
+void FAScript::SetGlobalValue (int32_t _index, Value _val) {
+	std::unique_lock _ul { m_mtx };
+	m_global_vars [_index] = _val;
+}
+
+
+
+Value FAScript::GetGlobalValue (int32_t _index) {
+	std::unique_lock _ul { m_mtx };
+	return m_global_vars [_index];
 }
 }

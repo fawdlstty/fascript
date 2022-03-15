@@ -23,7 +23,7 @@ class AstFunction: IAstExpr {
 		for (size_t i = _start; i < _ids.size (); ++i)
 			Arguments.push_back (_ids [i]->getText ());
 		Codes = IAstExpr::FromCtxs (_ctx->stmt ());
-		Codes.push_back (AstReturn::Make (AstValue::FromNull ()));
+		Codes.push_back (AstReturn::Make ());
 	}
 
 public:

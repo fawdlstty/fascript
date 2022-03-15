@@ -33,7 +33,7 @@ public:
 			} else {
 				_bc.LoadNull ();
 			}
-			_bc.Return ();
+			_bc.Return (1);// TODO 待补充参数数量
 		} else {
 			throw Exception::NotImplement ();
 		}

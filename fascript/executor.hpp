@@ -11,51 +11,59 @@ namespace fas {
 class Executor {
 	std::shared_ptr<FAScript> m_s;
 	std::vector<uint8_t> &m_code;
-	size_t m_code_pos;
+	int32_t m_code_pos;
 	std::vector<Value> m_stack {};
 
 public:
-	Executor (std::shared_ptr<FAScript> _s, std::vector<uint8_t> &_code, size_t _code_start):
+	Executor (std::shared_ptr<FAScript> _s, std::vector<uint8_t> &_code, int32_t _code_start):
 		m_s (_s), m_code (_code), m_code_pos (_code_start) {}
 
 	Value Exec () {
+		//int32_t _tmp_i32;
+		size_t _tmp_sz;
 		while (true) {
 			switch (GetOpcode ()) {
-			case OpCode::LOAD_NULL: m_stack.push_back (Value { m_s }); break;
-			case OpCode::LOAD_BOOL: m_stack.push_back (Value { m_s, !!GetInt<uint8_t> () }); break;
-			case OpCode::LOAD_INT64: m_stack.push_back (Value { m_s, GetInt<int64_t> () }); break;
-			case OpCode::LOAD_FLOAT64: m_stack.push_back (Value { m_s, GetFloat64 () }); break;
-			case OpCode::LOAD_STRING: m_stack.push_back (Value { m_s, GetString () }); break;
-			case OpCode::LOAD_FUNC: m_stack.push_back (Value { m_s, m_s->GetFuncFromId (GetInt<int32_t> ()) }); break;
-			case OpCode::LOAD_GLOBAL_VAR: break;
-			case OpCode::LOAD_MEMBER_VAR: break;
-			case OpCode::LOAD_ARG_VAR: break;
-			case OpCode::LOAD_LOCAL_VAR: break;
-			case OpCode::LOAD_VARIABLE: break;
-			case OpCode::STORE_GLOBA_VAR: break;
-			case OpCode::STORE_MEMBER_VAR: break;
-			case OpCode::STORE_ARG_VAR: break;
-			case OpCode::STORE_LOCAL_VAR: break;
-			case OpCode::IGNORE: break;
-			case OpCode::LOAD_MEMBER_ID: break;
-			case OpCode::LOAD_MEMBER_NAME: break;
-			case OpCode::LOAD_MEMBER_IMMNUM: break;
-			case OpCode::LOAD_MEMBER_NUM: break;
-			case OpCode::STORE_MEMBER_ID: break;
-			case OpCode::STORE_MEMBER_NAME: break;
-			case OpCode::STORE_MEMBER_IMMNUM: break;
-			case OpCode::STORE_MEMBER_NUM: break;
-			case OpCode::NOT: break;
-			case OpCode::AND: break;
-			case OpCode::OR: break;
-			case OpCode::ADD: break;
-			case OpCode::SUB: break;
-			case OpCode::MUL: break;
-			case OpCode::DIV: break;
-			case OpCode::MOD: break;
-			case OpCode::LOAD_POS: break;
-			case OpCode::GOTO: break;
-			case OpCode::RET: break;
+			case OpCode::LOAD_NULL:				m_stack.push_back (Value { m_s }); break;
+			case OpCode::LOAD_BOOL:				m_stack.push_back (Value { m_s, !!GetInt<uint8_t> () }); break;
+			case OpCode::LOAD_INT64:			m_stack.push_back (Value { m_s, GetInt<int64_t> () }); break;
+			case OpCode::LOAD_FLOAT64:			m_stack.push_back (Value { m_s, GetFloat64 () }); break;
+			case OpCode::LOAD_STRING:			m_stack.push_back (Value { m_s, GetString () }); break;
+			case OpCode::LOAD_FUNC:				m_stack.push_back (Value { m_s, m_s->GetFuncFromId (GetInt<int32_t> ()) }); break;
+			case OpCode::LOAD_GLOBAL_VAR:		m_stack.push_back (m_s->GetGlobalValue (GetInt<int32_t> ())); break;
+			case OpCode::LOAD_MEMBER_VAR:		break;
+			case OpCode::LOAD_ARG_VAR:			break;
+			case OpCode::LOAD_LOCAL_VAR:		break;
+			case OpCode::LOAD_VARIABLE:			break;
+			case OpCode::STORE_GLOBA_VAR:		m_s->SetGlobalValue (GetInt<int32_t> (), *m_stack.rbegin ()); m_stack.pop_back (); break;
+			case OpCode::STORE_MEMBER_VAR:		break;
+			case OpCode::STORE_ARG_VAR:			break;
+			case OpCode::STORE_LOCAL_VAR:		break;
+			case OpCode::IGNORE:				m_stack.erase (m_stack.end () - 1); break;
+			case OpCode::LOAD_MEMBER_ID:		break;
+			case OpCode::LOAD_MEMBER_NAME:		break;
+			case OpCode::LOAD_MEMBER_IMMNUM:	break;
+			case OpCode::LOAD_MEMBER_NUM:		break;
+			case OpCode::STORE_MEMBER_ID:		break;
+			case OpCode::STORE_MEMBER_NAME:		break;
+			case OpCode::STORE_MEMBER_IMMNUM:	break;
+			case OpCode::STORE_MEMBER_NUM:		break;
+			case OpCode::NOT:					break;
+			case OpCode::AND:					break;
+			case OpCode::OR:					break;
+			case OpCode::ADD:					break;
+			case OpCode::SUB:					break;
+			case OpCode::MUL:					break;
+			case OpCode::DIV:					break;
+			case OpCode::MOD:					break;
+			case OpCode::LOAD_POS:				m_stack.push_back (Value { m_s, m_s->GetFuncFromId (GetInt<int32_t> ()) }); break;
+			case OpCode::GOTO:					m_code_pos = GetInt<int32_t> (); break;
+			case OpCode::RET:
+				_tmp_sz = m_stack.size () - 2 - GetInt<uint8_t> ();
+				m_code_pos = m_stack [_tmp_sz].Get<int32_t> ();
+				m_stack.erase (m_stack.begin () + _tmp_sz, m_stack.end () - 1);
+				break;
+			default:
+				throw Exception::NotImplement ();
 			}
 		}
 	}
@@ -94,8 +102,8 @@ private:
 	}
 
 	std::string GetString () {
-		size_t _size = (size_t) GetInt<int32_t> ();
-		size_t _start = m_code_pos;
+		int32_t _size = GetInt<int32_t> ();
+		int32_t _start = m_code_pos;
 		m_code_pos += _size;
 		return std::string ((char *) &m_code [_start], (char *) &m_code [m_code_pos]);
 	}

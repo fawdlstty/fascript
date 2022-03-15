@@ -27,6 +27,9 @@ public:
 	void MarkLeaveBlock () { m_current_blocks.erase (m_current_blocks.begin () + m_current_blocks.size () - 1); }
 	AstIdType CheckIdType (std::string _id);
 
+	void SetGlobalValue (int32_t _index, Value _val);
+	Value GetGlobalValue (int32_t _index);
+
 private:
 	std::recursive_mutex m_mtx;
 	BinCode m_bc {};

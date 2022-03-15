@@ -63,10 +63,11 @@ public:
 			switch (m_data.index ()) {
 			case 0: _bc.LoadNull (); break;
 			case 1: _bc.LoadBool (std::get<bool> (m_data)); break;
-			case 2: _bc.LoadInt64 (std::get<int64_t> (m_data)); break;
-			case 3: _bc.LoadFloat64 (std::get<double> (m_data)); break;
-			case 4: _bc.LoadString (std::get<std::string> (m_data)); break;
-			case 5: _bc.LoadFunction (std::get<std::shared_ptr<Function>> (m_data)->m_id); break;
+			//case 2: _bc.LoadAddress (std::get<int32_t> (m_data)); break;
+			case 3: _bc.LoadInt64 (std::get<int64_t> (m_data)); break;
+			case 4: _bc.LoadFloat64 (std::get<double> (m_data)); break;
+			case 5: _bc.LoadString (std::get<std::string> (m_data)); break;
+			case 6: _bc.LoadFunction (std::get<std::shared_ptr<Function>> (m_data)->m_id); break;
 			default: throw Exception::NotImplement ();
 			}
 		} else {
