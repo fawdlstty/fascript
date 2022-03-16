@@ -19,7 +19,6 @@ public:
 		m_s (_s), m_code (_code), m_code_pos (_code_start) {}
 
 	Value Exec () {
-		//int32_t _tmp_i32;
 		size_t _tmp_sz;
 		while (true) {
 			switch (GetOpcode ()) {
@@ -47,14 +46,22 @@ public:
 			case OpCode::STORE_MEMBER_NAME:		break;
 			case OpCode::STORE_MEMBER_IMMNUM:	break;
 			case OpCode::STORE_MEMBER_NUM:		break;
-			case OpCode::NOT:					break;
-			case OpCode::AND:					break;
-			case OpCode::OR:					break;
-			case OpCode::ADD:					break;
-			case OpCode::SUB:					break;
-			case OpCode::MUL:					break;
-			case OpCode::DIV:					break;
-			case OpCode::MOD:					break;
+			case OpCode::NOT:					*m_stack.rbegin () = Value { m_s, !m_stack.rbegin ()->Get<bool> () }; break;
+			case OpCode::AND:
+				_tmp_sz = m_stack.size () - 2;
+				m_stack [_tmp_sz] = Value { m_s, m_stack [_tmp_sz].Get<bool> () && m_stack [_tmp_sz + 1].Get<bool> () };
+				m_stack.erase (m_stack.end () - 1);
+				break;
+			case OpCode::OR:
+				_tmp_sz = m_stack.size () - 2;
+				m_stack [_tmp_sz] = Value { m_s, m_stack [_tmp_sz].Get<bool> () || m_stack [_tmp_sz + 1].Get<bool> () };
+				m_stack.erase (m_stack.end () - 1);
+				break;
+			case OpCode::ADD:					DoNumOp2 ('+'); break;
+			case OpCode::SUB:					DoNumOp2 ('-'); break;
+			case OpCode::MUL:					DoNumOp2 ('*'); break;
+			case OpCode::DIV:					DoNumOp2 ('/'); break;
+			case OpCode::MOD:					DoNumOp2 ('%'); break;
 			case OpCode::LOAD_POS:				m_stack.push_back (Value { m_s, m_s->GetFuncFromId (GetInt<int32_t> ()) }); break;
 			case OpCode::GOTO:					m_code_pos = GetInt<int32_t> (); break;
 			case OpCode::RET:
@@ -62,8 +69,7 @@ public:
 				m_code_pos = m_stack [_tmp_sz].Get<int32_t> ();
 				m_stack.erase (m_stack.begin () + _tmp_sz, m_stack.end () - 1);
 				break;
-			default:
-				throw Exception::NotImplement ();
+			default:							throw Exception::NotImplement ();
 			}
 		}
 	}
@@ -106,6 +112,46 @@ private:
 		int32_t _start = m_code_pos;
 		m_code_pos += _size;
 		return std::string ((char *) &m_code [_start], (char *) &m_code [m_code_pos]);
+	}
+
+	void DoNumOp2 (char _op) {
+		int64_t _tmp_i64 = 0, _tmp2_i64 = 0;
+		double _tmp_f64 = 0, _tmp2_f64 = 0;
+		size_t _tmp_sz = m_stack.size () - 2;
+		bool _b1 = m_stack [_tmp_sz].IsType<int64_t> (), _b2 = m_stack [_tmp_sz + 1].IsType<int64_t> ();
+		if (_b1) {
+			_tmp_i64 = m_stack [_tmp_sz].Get<int64_t> ();
+		} else {
+			_tmp_f64 = m_stack [_tmp_sz].Get<double> ();
+		}
+		if (_b2) {
+			_tmp2_i64 = m_stack [_tmp_sz].Get<int64_t> ();
+		} else {
+			_tmp2_f64 = m_stack [_tmp_sz].Get<double> ();
+		}
+		int8_t _n = (_b1 ? 1 : 0) + (_b2 ? 2 : 0);
+		switch (_n) {
+			case 3:		m_stack [_tmp_sz] = Value { m_s, DoNumOp2Calc<int64_t> (_op, _tmp_i64, _tmp2_i64)};
+			case 1:		m_stack [_tmp_sz] = Value { m_s, DoNumOp2Calc<double> (_op, (double) _tmp_i64, _tmp2_f64)};
+			case 2:		m_stack [_tmp_sz] = Value { m_s, DoNumOp2Calc<double> (_op, _tmp_f64, (double) _tmp2_i64)};
+			case 0:		m_stack [_tmp_sz] = Value { m_s, DoNumOp2Calc<double> (_op, _tmp_f64, _tmp2_f64)};
+		}
+		m_stack.erase (m_stack.end () - 1);
+	}
+
+	template<Int64OrFloat64 T>
+	static T DoNumOp2Calc (char _op, T _t1, T _t2) {
+		switch (_op) {
+			case '+':		return _t1 + _t2;
+			case '-':		return _t1 - _t2;
+			case '*':		return _t1 * _t2;
+			case '/':		return _t1 / _t2;
+			case '%':
+				if constexpr (std::is_same<T, int64_t>::value)
+					return _t1 % _t2;
+			default:		break;
+		}
+		throw Exception::NotImplement ();
 	}
 };
 }
