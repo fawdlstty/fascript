@@ -9,7 +9,10 @@
 
 namespace fas {
 class AstInvoke: IAstExpr {
-	AstInvoke (std::shared_ptr<IAstExpr> _func, std::vector<std::shared_ptr<IAstExpr>> _args): m_func (_func), m_args (_args) {}
+	AstInvoke (std::shared_ptr<IAstExpr> _func, std::vector<std::shared_ptr<IAstExpr>> _args): m_func (_func) {
+		m_args.push_back (AstId::FromName ("this"));
+		m_args.insert (m_args.end (), _args.begin (), _args.end ());
+	}
 
 public:
 	std::shared_ptr<IAstExpr> m_func = nullptr;
@@ -32,6 +35,7 @@ public:
 	}
 
 	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
+		// TODO push current+N
 		if (_type == OpType::Load || _type == OpType::None) {
 			for (size_t i = 0; i < m_args.size (); ++i) {
 				m_args [i]->GenerateBinaryCode (_bc, _s, OpType::Load);
