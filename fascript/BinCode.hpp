@@ -33,6 +33,7 @@ struct BinCode {
 		}
 		_load_int (_var_id);
 	}
+	void LoadPos (int32_t _pos) { m_data.push_back ((uint8_t) OpCode::LOAD_POS); _load_int (_pos); }
 	void StoreVariable (AstIdType _type, int32_t _var_id) {
 		if (_type == AstIdType::Global) {
 			m_data.push_back ((uint8_t) OpCode::STORE_GLOBA_VAR);

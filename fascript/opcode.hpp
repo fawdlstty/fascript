@@ -17,6 +17,7 @@ enum class OpCode {
 	LOAD_ARG_VAR,			// 载入一个参数值，后接4字节index
 	LOAD_LOCAL_VAR,			// 载入一个局部变量值，后接4字节ID
 	LOAD_VARIABLE,			// 载入一个局部变量值
+	LOAD_POS,				// 载入一个目标位置（4字节）
 	STORE_GLOBA_VAR,		// 存档一个值至全局变量
 	STORE_MEMBER_VAR,		// 存档一个值至对象成员变量
 	STORE_ARG_VAR,			// 存档一个值至参数
@@ -44,7 +45,6 @@ enum class OpCode {
 	MOD,					// 算术取余运算（2->1）
 
 	// 函数调用
-	LOAD_POS,				// 压入目标位置（4字节）
 	GOTO,					// 跳转到指地址
 	RET,					// 函数返回，后接uint8类型参数数量，恢复现场，并附带一个返回值（相当于缓存栈顶，弹出参数，JMP，再恢复栈顶）
 

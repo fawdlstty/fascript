@@ -36,6 +36,7 @@ public:
 
 	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
 		// TODO push current+N
+		_bc.LoadPos (_bc.du);
 		if (_type == OpType::Load || _type == OpType::None) {
 			for (size_t i = 0; i < m_args.size (); ++i) {
 				m_args [i]->GenerateBinaryCode (_bc, _s, OpType::Load);
