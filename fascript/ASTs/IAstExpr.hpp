@@ -3,7 +3,7 @@
 
 
 
-#include "../fascript.hpp"
+#include "../fascript.h"
 #include "../_AntlrGens/FAScriptParser.h"
 #include "../BinCode.hpp"
 
@@ -23,10 +23,16 @@ public:
 	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::StrongExprContext *_ctx);
 	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::StrongExprBaseContext *_ctx);
 
-	virtual size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) = 0;
+	virtual int32_t GetBinaryCodeSize (FAScript &_s, OpType _type, int32_t _start) = 0;
+	void SetPos (int32_t _start) { m_pos = _start; }
+	int32_t GetPos () { return m_pos; }
+
 	virtual void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) = 0;
 
 	virtual bool AllowAddAddSubSub () { return false; }
+
+private:
+	int32_t m_pos = -1;
 };
 }
 

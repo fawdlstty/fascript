@@ -17,18 +17,22 @@ class AstInvoke: IAstExpr {
 public:
 	std::shared_ptr<IAstExpr> m_func = nullptr;
 	std::vector<std::shared_ptr<IAstExpr>> m_args;
+	int32_t m_pos_end = 0;
 
 	static std::shared_ptr<IAstExpr> Make (std::shared_ptr<IAstExpr> _func, std::vector<std::shared_ptr<IAstExpr>> _args) {
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstInvoke { _func, _args });
 	}
 
-	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
+	int32_t GetBinaryCodeSize (FAScript &_s, OpType _type, int32_t _start) override {
+		SetPos (_start);
 		if (_type == OpType::Load || _type == OpType::None) {
 			size_t _size = 0;
+			// TODO 检查参数数量，不足则抛异常
 			for (size_t i = 0; i < m_args.size (); ++i) {
 				_size += m_args [i]->GetBinaryCodeSize (_s, OpType::Load, _start + _size);
 			}
-			return _size + (_type == OpType::None ? 7 : 6);
+			m_pos_end = (int32_t) (_size + (_type == OpType::None ? 12 : 11));
+			return (size_t) m_pos_end;
 		} else {
 			throw Exception::NotImplement ();
 		}
@@ -36,12 +40,12 @@ public:
 
 	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
 		// TODO push current+N
-		_bc.LoadPos (_bc.du);
+		_bc.LoadPos (m_pos_end); // current+这整段代码长度
 		if (_type == OpType::Load || _type == OpType::None) {
 			for (size_t i = 0; i < m_args.size (); ++i) {
 				m_args [i]->GenerateBinaryCode (_bc, _s, OpType::Load);
 			}
-			m_func->GenerateBinaryCode (_bc, _s, OpType::Load);
+			_bc.LoadPos (m_func->GetPos ());
 			_bc.GoTo ();
 			if (_type == OpType::None)
 				_bc.Ignore ();

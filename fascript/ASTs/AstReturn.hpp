@@ -18,7 +18,8 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstReturn { _expr });
 	}
 
-	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
+	int32_t GetBinaryCodeSize (FAScript &_s, OpType _type, int32_t _start) override {
+		SetPos (_start);
 		if (_type == OpType::None) {
 			return 1 + (m_expr ? m_expr->GetBinaryCodeSize (_s, OpType::Load, _start) : 1);
 		} else {

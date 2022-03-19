@@ -22,54 +22,54 @@ public:
 		size_t _tmp_sz;
 		while (true) {
 			switch (GetOpcode ()) {
-			case OpCode::LOAD_NULL:				m_stack.push_back (Value { m_s }); break;
-			case OpCode::LOAD_BOOL:				m_stack.push_back (Value { m_s, !!GetInt<uint8_t> () }); break;
-			case OpCode::LOAD_INT64:			m_stack.push_back (Value { m_s, GetInt<int64_t> () }); break;
-			case OpCode::LOAD_FLOAT64:			m_stack.push_back (Value { m_s, GetFloat64 () }); break;
-			case OpCode::LOAD_STRING:			m_stack.push_back (Value { m_s, GetString () }); break;
-			case OpCode::LOAD_FUNC:				m_stack.push_back (Value { m_s, m_s->GetFuncFromId (GetInt<int32_t> ()) }); break;
-			case OpCode::LOAD_GLOBAL_VAR:		m_stack.push_back (m_s->GetGlobalValue (GetInt<int32_t> ())); break;
-			case OpCode::LOAD_MEMBER_VAR:		break;
-			case OpCode::LOAD_ARG_VAR:			break;
-			case OpCode::LOAD_LOCAL_VAR:		break;
-			case OpCode::LOAD_VARIABLE:			break;
-			case OpCode::STORE_GLOBA_VAR:		m_s->SetGlobalValue (GetInt<int32_t> (), *m_stack.rbegin ()); m_stack.pop_back (); break;
-			case OpCode::STORE_MEMBER_VAR:		break;
-			case OpCode::STORE_ARG_VAR:			break;
-			case OpCode::STORE_LOCAL_VAR:		break;
-			case OpCode::IGNORE:				m_stack.erase (m_stack.end () - 1); break;
-			case OpCode::LOAD_MEMBER_ID:		break;
-			case OpCode::LOAD_MEMBER_NAME:		break;
-			case OpCode::LOAD_MEMBER_IMMNUM:	break;
-			case OpCode::LOAD_MEMBER_NUM:		break;
-			case OpCode::STORE_MEMBER_ID:		break;
-			case OpCode::STORE_MEMBER_NAME:		break;
-			case OpCode::STORE_MEMBER_IMMNUM:	break;
-			case OpCode::STORE_MEMBER_NUM:		break;
-			case OpCode::NOT:					*m_stack.rbegin () = Value { m_s, !m_stack.rbegin ()->Get<bool> () }; break;
-			case OpCode::AND:
-				_tmp_sz = m_stack.size () - 2;
-				m_stack [_tmp_sz] = Value { m_s, m_stack [_tmp_sz].Get<bool> () && m_stack [_tmp_sz + 1].Get<bool> () };
-				m_stack.erase (m_stack.end () - 1);
-				break;
-			case OpCode::OR:
-				_tmp_sz = m_stack.size () - 2;
-				m_stack [_tmp_sz] = Value { m_s, m_stack [_tmp_sz].Get<bool> () || m_stack [_tmp_sz + 1].Get<bool> () };
-				m_stack.erase (m_stack.end () - 1);
-				break;
-			case OpCode::ADD:					DoNumOp2 ('+'); break;
-			case OpCode::SUB:					DoNumOp2 ('-'); break;
-			case OpCode::MUL:					DoNumOp2 ('*'); break;
-			case OpCode::DIV:					DoNumOp2 ('/'); break;
-			case OpCode::MOD:					DoNumOp2 ('%'); break;
-			case OpCode::LOAD_POS:				m_stack.push_back (Value { m_s, m_s->GetFuncFromId (GetInt<int32_t> ()) }); break;
-			case OpCode::GOTO:					m_code_pos = GetInt<int32_t> (); break;
-			case OpCode::RET:
-				_tmp_sz = m_stack.size () - 2 - GetInt<uint8_t> ();
-				m_code_pos = m_stack [_tmp_sz].Get<int32_t> ();
-				m_stack.erase (m_stack.begin () + _tmp_sz, m_stack.end () - 1);
-				break;
-			default:							throw Exception::NotImplement ();
+				case OpCode::LOAD_NULL:				m_stack.push_back (Value { m_s }); break;
+				case OpCode::LOAD_BOOL:				m_stack.push_back (Value { m_s, !!GetInt<uint8_t> () }); break;
+				case OpCode::LOAD_INT64:			m_stack.push_back (Value { m_s, GetInt<int64_t> () }); break;
+				case OpCode::LOAD_FLOAT64:			m_stack.push_back (Value { m_s, GetFloat64 () }); break;
+				case OpCode::LOAD_STRING:			m_stack.push_back (Value { m_s, GetString () }); break;
+				case OpCode::LOAD_FUNC:				m_stack.push_back (Value { m_s, m_s->GetFuncFromId (GetInt<int32_t> ()) }); break;
+				case OpCode::LOAD_GLOBAL_VAR:		m_stack.push_back (m_s->GetGlobalValue (GetInt<int32_t> ())); break;
+				case OpCode::LOAD_MEMBER_VAR:		/*TODO*/break;
+				case OpCode::LOAD_ARG_VAR:			/*TODO*/break;
+				case OpCode::LOAD_LOCAL_VAR:		/*TODO*/break;
+				case OpCode::LOAD_VARIABLE:			/*TODO*/break;
+				case OpCode::STORE_GLOBA_VAR:		m_s->SetGlobalValue (GetInt<int32_t> (), *m_stack.rbegin ()); m_stack.pop_back (); break;
+				case OpCode::STORE_MEMBER_VAR:		/*TODO*/break;
+				case OpCode::STORE_ARG_VAR:			/*TODO*/break;
+				case OpCode::STORE_LOCAL_VAR:		/*TODO*/break;
+				case OpCode::IGNORE:				m_stack.erase (m_stack.end () - 1); break;
+				case OpCode::LOAD_MEMBER_ID:		/*TODO*/break;
+				case OpCode::LOAD_MEMBER_NAME:		/*TODO*/break;
+				case OpCode::LOAD_MEMBER_IMMNUM:	/*TODO*/break;
+				case OpCode::LOAD_MEMBER_NUM:		/*TODO*/break;
+				case OpCode::STORE_MEMBER_ID:		/*TODO*/break;
+				case OpCode::STORE_MEMBER_NAME:		/*TODO*/break;
+				case OpCode::STORE_MEMBER_IMMNUM:	/*TODO*/break;
+				case OpCode::STORE_MEMBER_NUM:		/*TODO*/break;
+				case OpCode::NOT:					*m_stack.rbegin () = Value { m_s, !m_stack.rbegin ()->Get<bool> () }; break;
+				case OpCode::AND:
+					_tmp_sz = m_stack.size () - 2;
+					m_stack [_tmp_sz] = Value { m_s, m_stack [_tmp_sz].Get<bool> () && m_stack [_tmp_sz + 1].Get<bool> () };
+					m_stack.erase (m_stack.end () - 1);
+					break;
+				case OpCode::OR:
+					_tmp_sz = m_stack.size () - 2;
+					m_stack [_tmp_sz] = Value { m_s, m_stack [_tmp_sz].Get<bool> () || m_stack [_tmp_sz + 1].Get<bool> () };
+					m_stack.erase (m_stack.end () - 1);
+					break;
+				case OpCode::ADD:					DoNumOp2 ('+'); break;
+				case OpCode::SUB:					DoNumOp2 ('-'); break;
+				case OpCode::MUL:					DoNumOp2 ('*'); break;
+				case OpCode::DIV:					DoNumOp2 ('/'); break;
+				case OpCode::MOD:					DoNumOp2 ('%'); break;
+				case OpCode::LOAD_POS:				m_stack.push_back (Value { m_s, GetInt<int32_t> () }); break;
+				case OpCode::GOTO:					m_code_pos = m_stack.rbegin ()->Get<int32_t> (); m_stack.pop_back (); break;
+				case OpCode::RET:
+					_tmp_sz = m_stack.size () - 2 - GetInt<uint8_t> ();
+					m_code_pos = m_stack [_tmp_sz].Get<int32_t> ();
+					m_stack.erase (m_stack.begin () + _tmp_sz, m_stack.end () - 1);
+					break;
+				default:							throw Exception::NotImplement ();
 			}
 		}
 	}

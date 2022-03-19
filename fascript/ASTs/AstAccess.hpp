@@ -18,7 +18,8 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstAccess { _value, _arg });
 	}
 
-	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
+	int32_t GetBinaryCodeSize (FAScript &_s, OpType _type, int32_t _start) override {
+		SetPos (_start);
 		throw Exception::NotImplement ();
 	}
 

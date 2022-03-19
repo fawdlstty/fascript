@@ -41,7 +41,8 @@ public:
 		}
 	}
 
-	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
+	int32_t GetBinaryCodeSize (FAScript &_s, OpType _type, int32_t _start) override {
+		SetPos (_start);
 		if (_type == OpType::Load) {
 			switch (m_data.index ()) {
 			case 0: return 1;

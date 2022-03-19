@@ -1,5 +1,5 @@
 ﻿#include "pch.h"
-#include "fascript.hpp"
+#include "fascript.h"
 
 #include "_AntlrGens/FAScriptParser.h"
 #include "_AntlrGens/FAScriptLexer.h"
@@ -58,6 +58,8 @@ Value FAScript::RunCode (std::string _code) {
 	for (size_t i = 0; i < m_uncompiled_funcs.size (); ++i) {
 		_start += m_uncompiled_funcs [i]->GetBinaryCodeSize (*this, OpType::None, _start);
 	}
+
+	// TODO 编译函数代码前重置函数地址（SetPos）
 
 	// 编译代码
 	for (auto _expr : _exprs) {

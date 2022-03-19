@@ -31,7 +31,6 @@ public:
 	int32_t m_func_id = 0;
 	std::vector<std::string> Arguments { "this" };
 	std::vector<std::shared_ptr<IAstExpr>> Codes;
-	size_t CodeStart = 0;
 
 	static std::shared_ptr<IAstExpr> FromCtx (FAScriptParser::FnExprContext *_ctx) {
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstFunction { _ctx });
@@ -41,7 +40,8 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstFunction { _ctx });
 	}
 
-	size_t GetBinaryCodeSize (FAScript &_s, OpType _type, size_t _start) override {
+	int32_t GetBinaryCodeSize (FAScript &_s, OpType _type, int32_t _start) override {
+		// TODO SetPos (_start);
 		if (_type == OpType::None) {
 			for (size_t i = 0; i < Codes.size (); ++i) {
 				if (!Codes [i]) {
@@ -50,11 +50,10 @@ public:
 				}
 			}
 
-			CodeStart = _start;
 			for (size_t i = 0; i < Codes.size (); ++i) {
 				_start = Codes [i]->GetBinaryCodeSize (_s, OpType::None, _start);
 			}
-			return _start - CodeStart;
+			return _start - GetPos ();
 		} else if (_type == OpType::Load) {
 			if (!m_registered) {
 				m_registered = true;
@@ -73,7 +72,7 @@ public:
 			}
 		} else if (_type == OpType::Load) {
 			if (m_func_id == 0)
-				m_func_id = _s.NewGlobalFuncId (std::make_shared<Function> (0, Arguments.size (), CodeStart));
+				m_func_id = _s.NewGlobalFuncId (std::make_shared<Function> (0, Arguments.size (), GetPos ()));
 			_bc.LoadFunction (m_func_id);
 		} else {
 			throw Exception::NotImplement ();

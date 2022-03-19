@@ -9,7 +9,7 @@
 #include <iostream>
 #include <string>
 
-#include "../fascript/fascript.hpp"
+#include "../fascript/fascript.h"
 #pragma comment (lib, "../Debug/fascript.lib")
 
 

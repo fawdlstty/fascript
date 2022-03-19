@@ -194,7 +194,7 @@
     <ClInclude Include="common.hpp" />
     <ClInclude Include="exception.hpp" />
     <ClInclude Include="executor.hpp" />
-    <ClInclude Include="fascript.hpp" />
+    <ClInclude Include="fascript.h" />
     <ClInclude Include="fasvisitor.hpp" />
     <ClInclude Include="function.hpp" />
     <ClInclude Include="opcode.hpp" />
