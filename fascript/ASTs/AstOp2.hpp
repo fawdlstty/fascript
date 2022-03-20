@@ -27,20 +27,27 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstOp2 { _left, _op, _right });
 	}
 
-	int32_t GetBinaryCodeSize (FAScript &_s, OpType _type, int32_t _start) override {
-		SetPos (_start);
+	int32_t CalcBinaryCodeSize (FAScript &_s, OpType _type) override {
+		int32_t _length = 0;
 		if (_type == OpType::None) {
 			if (m_op == "=") {
-				_start = m_right->GetBinaryCodeSize (_s, OpType::Load, _start);
-				_start = m_left->GetBinaryCodeSize (_s, OpType::Store, _start);
-				return _start;
+				m_right->SetPos (GetPos ());
+				_length = m_right->CalcBinaryCodeSize (_s, OpType::Load);
+				m_left->SetPos (GetPos () + _length);
+				_length += m_left->CalcBinaryCodeSize (_s, OpType::Store);
+				SetLength (_length);
+				return _length;
 			} else {
 				throw Exception::NotImplement ();
 			}
 		} else if (_type == OpType::Load) {
-			_start = m_left->GetBinaryCodeSize (_s, OpType::Store, _start);
-			_start = m_right->GetBinaryCodeSize (_s, OpType::Load, _start);
-			return _start + 1;
+			m_right->SetPos (GetPos ());
+			_length = m_right->CalcBinaryCodeSize (_s, OpType::Load);
+			m_left->SetPos (GetPos () + _length);
+			_length += m_left->CalcBinaryCodeSize (_s, OpType::Store);
+			_length += 1;
+			SetLength (_length);
+			return _length;
 		} else {
 			throw Exception::NotImplement ();
 		}

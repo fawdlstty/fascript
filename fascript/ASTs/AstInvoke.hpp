@@ -23,16 +23,17 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstInvoke { _func, _args });
 	}
 
-	int32_t GetBinaryCodeSize (FAScript &_s, OpType _type, int32_t _start) override {
-		SetPos (_start);
+	int32_t CalcBinaryCodeSize (FAScript &_s, OpType _type) override {
 		if (_type == OpType::Load || _type == OpType::None) {
-			size_t _size = 0;
+			int32_t _length = 0;
 			// TODO 检查参数数量，不足则抛异常
 			for (size_t i = 0; i < m_args.size (); ++i) {
-				_size += m_args [i]->GetBinaryCodeSize (_s, OpType::Load, _start + _size);
+				m_args [i]->SetPos (GetPos () + _length);
+				_length += m_args [i]->CalcBinaryCodeSize (_s, OpType::Load);
 			}
-			m_pos_end = (int32_t) (_size + (_type == OpType::None ? 12 : 11));
-			return (size_t) m_pos_end;
+			_length += (_type == OpType::None ? 12 : 11);
+			SetLength (_length);
+			return _length;
 		} else {
 			throw Exception::NotImplement ();
 		}

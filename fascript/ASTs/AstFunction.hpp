@@ -40,8 +40,7 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstFunction { _ctx });
 	}
 
-	int32_t GetBinaryCodeSize (FAScript &_s, OpType _type, int32_t _start) override {
-		// TODO SetPos (_start);
+	int32_t CalcBinaryCodeSize (FAScript &_s, OpType _type) override {
 		if (_type == OpType::None) {
 			for (size_t i = 0; i < Codes.size (); ++i) {
 				if (!Codes [i]) {
@@ -50,10 +49,13 @@ public:
 				}
 			}
 
+			int32_t _length = 0;
 			for (size_t i = 0; i < Codes.size (); ++i) {
-				_start = Codes [i]->GetBinaryCodeSize (_s, OpType::None, _start);
+				Codes [i]->SetPos (GetPos () + _length);
+				_length += Codes [i]->CalcBinaryCodeSize (_s, OpType::None);
 			}
-			return _start - GetPos ();
+			IAstExpr::SetLength (_length);
+			return _length;
 		} else if (_type == OpType::Load) {
 			if (!m_registered) {
 				m_registered = true;

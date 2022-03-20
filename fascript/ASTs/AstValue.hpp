@@ -41,18 +41,20 @@ public:
 		}
 	}
 
-	int32_t GetBinaryCodeSize (FAScript &_s, OpType _type, int32_t _start) override {
-		SetPos (_start);
+	int32_t CalcBinaryCodeSize (FAScript &_s, OpType _type) override {
 		if (_type == OpType::Load) {
+			size_t _length = 0;
 			switch (m_data.index ()) {
-			case 0: return 1;
-			case 1: return 2;
-			case 2: return 9;
-			case 3: return 9;
-			case 4: { size_t _size = std::get<std::string> (m_data).size (); return _size + (_size >= 65536 ? 4 : 2); }
-			case 5: return 3;
-			default: throw Exception::NotImplement ();
+				case 0: _length = 1; break;
+				case 1: _length = 2; break;
+				case 2: _length = 9; break;
+				case 3: _length = 9; break;
+				case 4: _length = std::get<std::string> (m_data).size (); _length = _length + (_length >= 65536 ? 4 : 2); break;
+				case 5: _length = 3; break;
+				default: throw Exception::NotImplement ();
 			}
+			SetLength (_length);
+			return _length;
 		} else {
 			throw Exception::NotImplement ();
 		}

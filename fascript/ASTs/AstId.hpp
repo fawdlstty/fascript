@@ -25,10 +25,11 @@ public:
 		}
 	}
 
-	int32_t GetBinaryCodeSize (FAScript &_s, OpType _type, int32_t _start) override {
-		SetPos (_start);
-		if (_type == OpType::Load || _type == OpType::Store)
+	int32_t CalcBinaryCodeSize (FAScript &_s, OpType _type) override {
+		if (_type == OpType::Load || _type == OpType::Store) {
+			SetLength (5);
 			return 5;
+		}
 		throw Exception::NotImplement ();
 	}
 
