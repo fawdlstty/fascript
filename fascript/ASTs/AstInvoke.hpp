@@ -17,7 +17,6 @@ class AstInvoke: IAstExpr {
 public:
 	std::shared_ptr<IAstExpr> m_func = nullptr;
 	std::vector<std::shared_ptr<IAstExpr>> m_args;
-	int32_t m_pos_end = 0;
 
 	static std::shared_ptr<IAstExpr> Make (std::shared_ptr<IAstExpr> _func, std::vector<std::shared_ptr<IAstExpr>> _args) {
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstInvoke { _func, _args });
@@ -40,8 +39,7 @@ public:
 	}
 
 	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
-		// TODO push current+N
-		_bc.LoadPos (m_pos_end); // current+这整段代码长度
+		_bc.LoadPos (GetPos () + GetLength ());
 		if (_type == OpType::Load || _type == OpType::None) {
 			for (size_t i = 0; i < m_args.size (); ++i) {
 				m_args [i]->GenerateBinaryCode (_bc, _s, OpType::Load);

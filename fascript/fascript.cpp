@@ -50,19 +50,16 @@ Value FAScript::RunCode (std::string _code) {
 
 	// 初步计算长度
 	int32_t _length = 0;
-	size_t _start = 0;
 	for (size_t i = 0; i < _exprs.size (); ++i) {
-		_exprs [i]->SetPos (_start);
-		_start += _exprs [i]->CalcBinaryCodeSize (*this, OpType::None);
+		_exprs [i]->SetPos (_length);
+		_length += _exprs [i]->CalcBinaryCodeSize (*this, OpType::None);
 	}
 
 	// 计算函数代码长度
 	for (size_t i = 0; i < m_uncompiled_funcs.size (); ++i) {
-		m_uncompiled_funcs [i]->SetPos (_start);
-		_start += m_uncompiled_funcs [i]->CalcBinaryCodeSize (*this, OpType::None);
+		m_uncompiled_funcs [i]->SetPos (_length);
+		_length += m_uncompiled_funcs [i]->CalcBinaryCodeSize (*this, OpType::None);
 	}
-
-	// TODO 编译函数代码前重置函数地址（SetPos）
 
 	// 编译代码
 	for (auto _expr : _exprs) {
