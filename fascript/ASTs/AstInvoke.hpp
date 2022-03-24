@@ -9,17 +9,17 @@
 
 namespace fas {
 class AstInvoke: IAstExpr {
-	AstInvoke (std::shared_ptr<IAstExpr> _func, std::vector<std::shared_ptr<IAstExpr>> _args): m_func (_func) {
+	AstInvoke (std::shared_ptr<IAstExpr> _func_id, std::vector<std::shared_ptr<IAstExpr>> _args): m_func_id (_func_id) {
 		m_args.push_back (AstId::FromName ("this"));
 		m_args.insert (m_args.end (), _args.begin (), _args.end ());
 	}
 
 public:
-	std::shared_ptr<IAstExpr> m_func = nullptr;
+	std::shared_ptr<IAstExpr> m_func_id = nullptr;
 	std::vector<std::shared_ptr<IAstExpr>> m_args;
 
-	static std::shared_ptr<IAstExpr> Make (std::shared_ptr<IAstExpr> _func, std::vector<std::shared_ptr<IAstExpr>> _args) {
-		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstInvoke { _func, _args });
+	static std::shared_ptr<IAstExpr> Make (std::shared_ptr<IAstExpr> _func_id, std::vector<std::shared_ptr<IAstExpr>> _args) {
+		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstInvoke { _func_id, _args });
 	}
 
 	int32_t CalcBinaryCodeSize (FAScript &_s, OpType _type) override {
@@ -41,10 +41,7 @@ public:
 	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
 		_bc.LoadPos (GetPos () + GetLength ());
 		if (_type == OpType::Load || _type == OpType::None) {
-			for (size_t i = 0; i < m_args.size (); ++i) {
-				m_args [i]->GenerateBinaryCode (_bc, _s, OpType::Load);
-			}
-			_bc.LoadPos (m_func->GetPos ());
+			m_func_id->GenerateBinaryCode (_bc, _s, OpType::Load);
 			_bc.GoTo ();
 			if (_type == OpType::None)
 				_bc.Ignore ();
