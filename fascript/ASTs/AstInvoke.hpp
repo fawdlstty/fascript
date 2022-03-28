@@ -30,7 +30,7 @@ public:
 				m_args [i]->SetPos (GetPos () + _length);
 				_length += m_args [i]->CalcBinaryCodeSize (_s, OpType::Load);
 			}
-			_length += (_type == OpType::None ? 12 : 11);
+			_length += (_type == OpType::None ? 7 : 6);
 			SetLength (_length);
 			return _length;
 		} else {

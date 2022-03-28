@@ -30,28 +30,15 @@ public:
 	Value operator[] (int64_t _val);
 	Value operator[] (std::string _val);
 
-	template<AllowedCppType T>
-	static CppType GetCppType () {
-		if constexpr (std::is_same<std::decay<T>, bool>::value) {
-			return CppType::type_bool;
-		} else if constexpr (std::is_same<std::decay<T>, int32_t>::value) {
-			return CppType::type_int32;
-		} else if constexpr (std::is_same<std::decay<T>, int64_t>::value) {
-			return CppType::type_int64;
-		} else if constexpr (std::is_same<std::decay<T>, double>::value) {
-			return CppType::type_double;
-		} else if constexpr (std::is_same<std::decay<T>, std::string>::value) {
-			return CppType::type_string;
-		} else if constexpr (std::is_same<std::decay<T>, std::shared_ptr<Function>>::value) {
-			return CppType::type_function;
-		} else if constexpr (std::is_same<std::decay<T>, std::vector<Value>>::value) {
-			return CppType::type_vector;
-		} else if constexpr (std::is_same<std::decay<T>, std::map<MapKey, Value>>::value) {
-			return CppType::type_map;
-		} else {
-			throw Exception::NotSupportType ();
-		}
-	}
+	template<AllowedCppType T>	static CppType GetCppType ()							{ throw Exception::NotSupportType (); }
+	template<>					static CppType GetCppType<bool> ()						{ return CppType::type_bool; }
+	template<>					static CppType GetCppType<int32_t> ()					{ return CppType::type_int32; }
+	template<>					static CppType GetCppType<int64_t> ()					{ return CppType::type_int64; }
+	template<>					static CppType GetCppType<double> ()					{ return CppType::type_double; }
+	template<>					static CppType GetCppType<std::string> ()				{ return CppType::type_string; }
+	template<>					static CppType GetCppType<std::shared_ptr<Function>> ()	{ return CppType::type_function; }
+	template<>					static CppType GetCppType<std::vector<Value>> ()		{ return CppType::type_vector; }
+	template<>					static CppType GetCppType<std::map<MapKey, Value>> ()	{ return CppType::type_map; }
 
 	template<AllowedCppType T>
 	bool IsType () { return GetCppType<T> () == (CppType) m_data.index (); }

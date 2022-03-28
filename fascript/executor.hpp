@@ -63,7 +63,16 @@ public:
 				case OpCode::DIV:					DoNumOp2 ('/'); break;
 				case OpCode::MOD:					DoNumOp2 ('%'); break;
 				case OpCode::LOAD_POS:				m_stack.push_back (Value { m_s, GetInt<int32_t> () }); break;
-				case OpCode::GOTO:					m_code_pos = m_stack.rbegin ()->Get<int32_t> (); m_stack.pop_back (); break;
+				case OpCode::GOTO:
+					if (m_stack.rbegin ()->IsType<int32_t> ()) {
+						m_code_pos = m_stack.rbegin ()->Get<int32_t> ();
+					} else if (m_stack.rbegin ()->IsType<std::shared_ptr<Function>> ()) {
+						m_code_pos = m_stack.rbegin ()->Get<std::shared_ptr<Function>> ()->m_start_pos;
+					} else {
+						throw Exception::NotImplement ();
+					}
+					m_stack.pop_back ();
+					break;
 				case OpCode::RET:
 					_tmp_sz = m_stack.size () - 2 - GetInt<uint8_t> ();
 					m_code_pos = m_stack [_tmp_sz].Get<int32_t> ();
