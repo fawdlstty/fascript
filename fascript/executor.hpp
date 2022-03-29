@@ -3,6 +3,7 @@
 
 
 
+#include <magic_enum.hpp>
 #include "opcode.hpp"
 
 
@@ -11,14 +12,14 @@ namespace fas {
 class Executor {
 	std::shared_ptr<FAScript> m_s;
 	std::vector<uint8_t> &m_code;
-	int32_t m_code_pos;
+	int32_t m_code_pos = 0;
 	std::vector<Value> m_stack {};
 
 public:
-	Executor (std::shared_ptr<FAScript> _s, std::vector<uint8_t> &_code, int32_t _code_start):
-		m_s (_s), m_code (_code), m_code_pos (_code_start) {}
+	Executor (std::shared_ptr<FAScript> _s, std::vector<uint8_t> &_code): m_s (_s), m_code (_code) {}
 
-	Value Exec () {
+	Value Exec (int32_t _pos) {
+		m_code_pos = _pos;
 		size_t _tmp_sz;
 		while (true) {
 			switch (GetOpcode ()) {
@@ -81,6 +82,57 @@ public:
 				default:							throw Exception::NotImplement ();
 			}
 		}
+	}
+
+	std::string Print (int32_t _pos) {
+		std::stringstream _ss;
+
+		m_code_pos = _pos;
+		while ((size_t) m_code_pos < m_code.size ()) {
+			_ss << std::format ("0x{:08}        ", m_code_pos);
+			auto _opcode = GetOpcode ();
+			_ss << std::format ("{:20}", magic_enum::enum_name (_opcode));
+			switch (_opcode) {
+				case OpCode::LOAD_NULL:				break;
+				case OpCode::LOAD_BOOL:				_ss << !!GetInt<uint8_t> () ? "true" : "false"; break;
+				case OpCode::LOAD_INT64:			_ss << std::format ("{}", GetInt<int64_t> ()); break;
+				case OpCode::LOAD_FLOAT64:			_ss << std::format ("{}", GetFloat64 ()); break;
+				case OpCode::LOAD_STRING:			_ss << std::format ("\"{}\"", GetString ()); break;
+				case OpCode::LOAD_FUNC:				_ss << std::format ("{}", GetInt<int32_t> ()); break;
+				case OpCode::LOAD_GLOBAL_VAR:		_ss << std::format ("{}", GetInt<int32_t> ()); break;
+				case OpCode::LOAD_MEMBER_VAR:		_ss << "TODO"; break;
+				case OpCode::LOAD_ARG_VAR:			_ss << "TODO"; break;
+				case OpCode::LOAD_LOCAL_VAR:		_ss << "TODO"; break;
+				case OpCode::LOAD_VARIABLE:			_ss << "TODO"; break;
+				case OpCode::STORE_GLOBA_VAR:		_ss << std::format ("{}", GetInt<int32_t> ()); break;
+				case OpCode::STORE_MEMBER_VAR:		_ss << "TODO"; break;
+				case OpCode::STORE_ARG_VAR:			_ss << "TODO"; break;
+				case OpCode::STORE_LOCAL_VAR:		_ss << "TODO"; break;
+				case OpCode::IGNORE:				break;
+				case OpCode::LOAD_MEMBER_ID:		_ss << "TODO"; break;
+				case OpCode::LOAD_MEMBER_NAME:		_ss << "TODO"; break;
+				case OpCode::LOAD_MEMBER_IMMNUM:	_ss << "TODO"; break;
+				case OpCode::LOAD_MEMBER_NUM:		_ss << "TODO"; break;
+				case OpCode::STORE_MEMBER_ID:		_ss << "TODO"; break;
+				case OpCode::STORE_MEMBER_NAME:		_ss << "TODO"; break;
+				case OpCode::STORE_MEMBER_IMMNUM:	_ss << "TODO"; break;
+				case OpCode::STORE_MEMBER_NUM:		_ss << "TODO"; break;
+				case OpCode::NOT:					break;
+				case OpCode::AND:					break;
+				case OpCode::OR:					break;
+				case OpCode::ADD:					break;
+				case OpCode::SUB:					break;
+				case OpCode::MUL:					break;
+				case OpCode::DIV:					break;
+				case OpCode::MOD:					break;
+				case OpCode::LOAD_POS:				_ss << std::format ("{}", GetInt<int32_t> ()); break;
+				case OpCode::GOTO:					break;
+				case OpCode::RET:					_ss << std::format ("{}", GetInt<uint8_t> ()); break;
+				default:							throw Exception::NotImplement ();
+			}
+			_ss << "\n";
+		}
+		return _ss.str ();
 	}
 
 private:

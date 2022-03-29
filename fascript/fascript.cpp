@@ -24,7 +24,7 @@ Value FAScript::RunCode (std::string _code) {
 	fas::FASVisitor _visitor {};
 
 	// 获取代码执行位置
-	Executor _exec { shared_from_this (), m_bc.Dump (), 0/*(int32_t) _code.size ()*/ };
+	Executor _exec { shared_from_this (), m_bc.Dump () };
 
 	// 编译代码
 	std::vector<std::shared_ptr<IAstExpr>> _exprs = _visitor.visit (_parser.program ()).as<std::vector<std::shared_ptr<IAstExpr>>> ();
@@ -71,8 +71,11 @@ Value FAScript::RunCode (std::string _code) {
 		m_uncompiled_funcs [i]->GenerateBinaryCode (m_bc, *this, OpType::None);
 	}
 
+	// 打印字节码指令
+	std::cout << _exec.Print (0);
+
 	// 执行代码
-	_exec.Exec ();
+	_exec.Exec (0);
 	return Value { shared_from_this () };
 }
 
