@@ -89,7 +89,7 @@ public:
 
 		m_code_pos = _pos;
 		while ((size_t) m_code_pos < m_code.size ()) {
-			_ss << std::format ("0x{:08}        ", m_code_pos);
+			_ss << std::format ("{:08X}        ", m_code_pos);
 			auto _opcode = GetOpcode ();
 			_ss << std::format ("{:20}", magic_enum::enum_name (_opcode));
 			switch (_opcode) {
@@ -98,13 +98,13 @@ public:
 				case OpCode::LOAD_INT64:			_ss << std::format ("{}", GetInt<int64_t> ()); break;
 				case OpCode::LOAD_FLOAT64:			_ss << std::format ("{}", GetFloat64 ()); break;
 				case OpCode::LOAD_STRING:			_ss << std::format ("\"{}\"", GetString ()); break;
-				case OpCode::LOAD_FUNC:				_ss << std::format ("{}", GetInt<int32_t> ()); break;
-				case OpCode::LOAD_GLOBAL_VAR:		_ss << std::format ("{}", GetInt<int32_t> ()); break;
+				case OpCode::LOAD_FUNC:				_ss << m_s->GetFuncDespFromId (GetInt<int32_t> ()); break;
+				case OpCode::LOAD_GLOBAL_VAR:		_ss << m_s->GetVarNameFromId (GetInt<int32_t> ()); break;
 				case OpCode::LOAD_MEMBER_VAR:		_ss << "TODO"; break;
 				case OpCode::LOAD_ARG_VAR:			_ss << "TODO"; break;
 				case OpCode::LOAD_LOCAL_VAR:		_ss << "TODO"; break;
 				case OpCode::LOAD_VARIABLE:			_ss << "TODO"; break;
-				case OpCode::STORE_GLOBA_VAR:		_ss << std::format ("{}", GetInt<int32_t> ()); break;
+				case OpCode::STORE_GLOBA_VAR:		_ss << m_s->GetVarNameFromId (GetInt<int32_t> ()); break;
 				case OpCode::STORE_MEMBER_VAR:		_ss << "TODO"; break;
 				case OpCode::STORE_ARG_VAR:			_ss << "TODO"; break;
 				case OpCode::STORE_LOCAL_VAR:		_ss << "TODO"; break;

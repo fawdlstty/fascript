@@ -16,8 +16,10 @@ class FAScript: public std::enable_shared_from_this<FAScript> {
 public:
 	Value RunCode (std::string _code);
 	int32_t GetNameId (AstIdType _type, std::string _name);
+	std::string GetVarNameFromId (int32_t _var_id);
 	int32_t NewGlobalFuncId (std::shared_ptr<Function> _func);
 	std::shared_ptr<Function> GetFuncFromId (int32_t _func_id);
+	std::string GetFuncDespFromId (int32_t _func_id);
 
 	// ×¢²á´ý±àÒëº¯Êý
 	void RegisterUncompiledFunc (std::shared_ptr<IAstExpr> _ast_func) { m_uncompiled_funcs.push_back (_ast_func); }

@@ -110,6 +110,16 @@ int32_t FAScript::GetNameId (AstIdType _type, std::string _name) {
 
 
 
+std::string FAScript::GetVarNameFromId (int32_t _var_id) {
+	for (auto &[_key, _val] : m_name_to_id) {
+		if (_val == _var_id)
+			return _key;
+	}
+	return "";
+}
+
+
+
 int32_t FAScript::NewGlobalFuncId (std::shared_ptr<Function> _func) {
 	std::unique_lock _ul { m_mtx };
 	m_next_id++;
@@ -124,6 +134,17 @@ std::shared_ptr<Function> FAScript::GetFuncFromId (int32_t _func_id) {
 	std::unique_lock _ul { m_mtx };
 	auto _p = m_id_to_func.find (_func_id);
 	return _p != m_id_to_func.end () ? _p->second : nullptr;
+}
+
+
+
+std::string FAScript::GetFuncDespFromId (int32_t _func_id) {
+	auto _func = GetFuncFromId (_func_id);
+	if (_func) {
+		return std::format ("FUNC[{}],POS[{}]", _func_id, _func->m_start_pos);
+	} else {
+		return std::format ("UNKNOWN-FUNC[{}]", _func_id);
+	}
 }
 
 
