@@ -27,33 +27,7 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstOp2 { _left, _op, _right });
 	}
 
-	int32_t CalcBinaryCodeSize (FAScript &_s, OpType _type) override {
-		int32_t _length = 0;
-		if (_type == OpType::None) {
-			if (m_op == "=") {
-				m_right->SetPos (GetPos ());
-				_length = m_right->CalcBinaryCodeSize (_s, OpType::Load);
-				m_left->SetPos (GetPos () + _length);
-				_length += m_left->CalcBinaryCodeSize (_s, OpType::Store);
-				SetLength (_length);
-				return _length;
-			} else {
-				throw Exception::NotImplement ();
-			}
-		} else if (_type == OpType::Load) {
-			m_right->SetPos (GetPos ());
-			_length = m_right->CalcBinaryCodeSize (_s, OpType::Load);
-			m_left->SetPos (GetPos () + _length);
-			_length += m_left->CalcBinaryCodeSize (_s, OpType::Store);
-			_length += 1;
-			SetLength (_length);
-			return _length;
-		} else {
-			throw Exception::NotImplement ();
-		}
-	}
-
-	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
+	void GenerateBinaryCode (Generator &_bc, FAScript &_s, OpType _type) override {
 		if (m_op == "=") {
 			m_right->GenerateBinaryCode (_bc, _s, OpType::Load);
 			m_left->GenerateBinaryCode (_bc, _s, OpType::Store);

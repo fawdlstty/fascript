@@ -25,15 +25,7 @@ public:
 		}
 	}
 
-	int32_t CalcBinaryCodeSize (FAScript &_s, OpType _type) override {
-		if (_type == OpType::Load || _type == OpType::Store) {
-			SetLength (5);
-			return 5;
-		}
-		throw Exception::NotImplement ();
-	}
-
-	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
+	void GenerateBinaryCode (Generator &_bc, FAScript &_s, OpType _type) override {
 		if (m_type == AstIdType::Unknown)
 			m_type = _s.CheckIdType (m_name);
 		if (m_var_id == -1)

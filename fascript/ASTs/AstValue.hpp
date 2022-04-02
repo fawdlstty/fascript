@@ -41,26 +41,7 @@ public:
 		}
 	}
 
-	int32_t CalcBinaryCodeSize (FAScript &_s, OpType _type) override {
-		if (_type == OpType::Load) {
-			size_t _length = 0;
-			switch (m_data.index ()) {
-				case 0: _length = 1; break;
-				case 1: _length = 2; break;
-				case 2: _length = 9; break;
-				case 3: _length = 9; break;
-				case 4: _length = std::get<std::string> (m_data).size (); _length = _length + (_length >= 65536 ? 4 : 2); break;
-				case 5: _length = 3; break;
-				default: throw Exception::NotImplement ();
-			}
-			SetLength (_length);
-			return _length;
-		} else {
-			throw Exception::NotImplement ();
-		}
-	}
-
-	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
+	void GenerateBinaryCode (Generator &_bc, FAScript &_s, OpType _type) override {
 		// std::nullopt_t, bool, int64_t, double, std::string, std::shared_ptr<Function>, std::vector<Value>, std::map<MapKey, Value>
 		if (_type == OpType::Load) {
 			switch (m_data.index ()) {

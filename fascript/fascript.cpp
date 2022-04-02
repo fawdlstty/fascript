@@ -24,7 +24,7 @@ Value FAScript::RunCode (std::string _code) {
 	fas::FASVisitor _visitor {};
 
 	// 获取代码执行位置
-	Executor _exec { shared_from_this (), m_bc.Dump () };
+	Executor _exec { shared_from_this (), m_bc.GetCodes () };
 
 	// 编译代码
 	std::vector<std::shared_ptr<IAstExpr>> _exprs = _visitor.visit (_parser.program ()).as<std::vector<std::shared_ptr<IAstExpr>>> ();
@@ -47,19 +47,6 @@ Value FAScript::RunCode (std::string _code) {
 	auto _last_ret = dynamic_cast<AstReturn*> (_exprs [_last_index].get ());
 	if (!_last_ret)
 		_exprs [_last_index] = AstReturn::Make (_exprs [_last_index]);
-
-	// 初步计算长度
-	int32_t _length = 0;
-	for (size_t i = 0; i < _exprs.size (); ++i) {
-		_exprs [i]->SetPos (_length);
-		_length += _exprs [i]->CalcBinaryCodeSize (*this, OpType::None);
-	}
-
-	// 计算函数代码长度
-	for (size_t i = 0; i < m_uncompiled_funcs.size (); ++i) {
-		m_uncompiled_funcs [i]->SetPos (_length);
-		_length += m_uncompiled_funcs [i]->CalcBinaryCodeSize (*this, OpType::None);
-	}
 
 	// 编译代码
 	for (auto _expr : _exprs) {
@@ -113,9 +100,9 @@ int32_t FAScript::GetNameId (AstIdType _type, std::string _name) {
 std::string FAScript::GetVarNameFromId (int32_t _var_id) {
 	for (auto &[_key, _val] : m_name_to_id) {
 		if (_val == _var_id)
-			return _key;
+			return std::format ("{}(ID:{})", _key, _var_id);
 	}
-	return "";
+	return "(UNKNOWN)";
 }
 
 

@@ -78,9 +78,6 @@
     <ClInclude Include="opcode.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="BinCode.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="_AntlrGens\FAScriptBaseVisitor.h">
       <Filter>头文件\_AntlrGens</Filter>
     </ClInclude>
@@ -100,6 +97,9 @@
       <Filter>头文件\ASTs</Filter>
     </ClInclude>
     <ClInclude Include="executor.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Generator.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

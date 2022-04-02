@@ -22,24 +22,7 @@ public:
 		return std::shared_ptr<IAstExpr> ((IAstExpr *) new AstInvoke { _func_id, _args });
 	}
 
-	int32_t CalcBinaryCodeSize (FAScript &_s, OpType _type) override {
-		if (_type == OpType::Load || _type == OpType::None) {
-			int32_t _length = 0;
-			// TODO 检查参数数量，不足则抛异常
-			for (size_t i = 0; i < m_args.size (); ++i) {
-				m_args [i]->SetPos (GetPos () + _length);
-				_length += m_args [i]->CalcBinaryCodeSize (_s, OpType::Load);
-			}
-			_length += (_type == OpType::None ? 7 : 6);
-			SetLength (_length);
-			return _length;
-		} else {
-			throw Exception::NotImplement ();
-		}
-	}
-
-	void GenerateBinaryCode (BinCode &_bc, FAScript &_s, OpType _type) override {
-		_bc.LoadPos (GetPos () + GetLength ());
+	void GenerateBinaryCode (Generator &_bc, FAScript &_s, OpType _type) override {
 		if (_type == OpType::Load || _type == OpType::None) {
 			m_func_id->GenerateBinaryCode (_bc, _s, OpType::Load);
 			_bc.GoTo ();

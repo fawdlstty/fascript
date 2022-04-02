@@ -5,7 +5,7 @@
 
 #include "value.hpp"
 #include "function.hpp"
-#include "BinCode.hpp"
+#include "Generator.hpp"
 
 
 
@@ -34,7 +34,7 @@ public:
 
 private:
 	std::recursive_mutex m_mtx;
-	BinCode m_bc {};
+	Generator m_bc {};
 
 	std::map<std::string, int32_t> m_name_to_id;
 	int32_t m_next_id = 0;
