@@ -41,9 +41,15 @@ public:
 	}
 
 	void GenerateBinaryCode (Generator &_bc, FAScript &_s, OpType _type) override {
+		if (!m_registered) {
+			m_registered = true;
+			_s.RegisterUncompiledFunc (shared_from_this ());
+		}
+
 		if (_type == OpType::None) {
 			for (size_t i = 0; i < Codes.size (); ++i) {
-				Codes [i]->GenerateBinaryCode (_bc, _s, OpType::None);
+				if (Codes [i])
+					Codes [i]->GenerateBinaryCode (_bc, _s, OpType::None);
 			}
 		} else if (_type == OpType::Load) {
 			if (m_func_id == 0)

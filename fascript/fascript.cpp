@@ -60,9 +60,13 @@ Value FAScript::RunCode (std::string _code) {
 
 	// 打印字节码指令
 	std::cout << _exec.Print (0);
+	std::cout << std::endl << std::endl << std::endl;
+	std::cout << "press enter key to continue." << std::endl;
+	char _ch;
+	std::cin >> _ch;
 
 	// 执行代码
-	_exec.Exec (0);
+	//_exec.Exec (0);
 	return Value { shared_from_this () };
 }
 

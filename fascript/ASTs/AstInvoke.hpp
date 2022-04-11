@@ -24,8 +24,17 @@ public:
 
 	void GenerateBinaryCode (Generator &_bc, FAScript &_s, OpType _type) override {
 		if (_type == OpType::Load || _type == OpType::None) {
+			int32_t _pos = _bc.GetCodePos ();
+			_bc.LoadPos (0);
+			for (auto &_item : m_args)
+				_item->GenerateBinaryCode (_bc, _s, OpType::Load);
 			m_func_id->GenerateBinaryCode (_bc, _s, OpType::Load);
 			_bc.GoTo ();
+			int32_t _end_pos = _bc.GetCodePos ();
+			//*(int32_t *) &_bc.GetCodes () [_pos + 1] = _end_pos;
+			IntDataType4 _d { .int32 = _end_pos, };
+			for (size_t i = 0; i < 4; ++i)
+				_bc.GetCodes () [_pos + 1 + i] = _d.uint8 [i];
 			if (_type == OpType::None)
 				_bc.Ignore ();
 		} else {

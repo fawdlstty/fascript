@@ -125,7 +125,7 @@ public:
 				case OpCode::MUL:					break;
 				case OpCode::DIV:					break;
 				case OpCode::MOD:					break;
-				case OpCode::LOAD_POS:				_ss << std::format ("{}", GetInt<int32_t> ()); break;
+				case OpCode::LOAD_POS:				_ss << std::format ("0x{:X}", GetInt<int32_t> ()); break;
 				case OpCode::GOTO:					break;
 				case OpCode::RET:					_ss << std::format ("{}", GetInt<uint8_t> ()); break;
 				default:							throw Exception::NotImplement ();

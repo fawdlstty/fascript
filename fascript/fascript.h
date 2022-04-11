@@ -3,6 +3,7 @@
 
 
 
+#include <functional>
 #include "value.hpp"
 #include "function.hpp"
 #include "Generator.hpp"
@@ -32,6 +33,8 @@ public:
 	void SetGlobalValue (int32_t _index, Value _val);
 	Value GetGlobalValue (int32_t _index);
 
+	//void RegisterLastUpdateFunc (std::function<void (fas::Generator &_bc)> _func) { m_last_update_funcs.push_back (_func); }
+
 private:
 	std::recursive_mutex m_mtx;
 	Generator m_bc {};
@@ -46,6 +49,8 @@ private:
 
 	std::vector<std::shared_ptr<IAstExpr>> m_uncompiled_funcs;
 	std::vector<std::shared_ptr<IAstExpr>> m_current_blocks;
+
+	//static std::vector<std::function<void (fas::Generator &_bc)>> m_last_update_funcs;
 };
 }
 
