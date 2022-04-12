@@ -29,7 +29,7 @@ public:
 			for (auto &_item : m_args)
 				_item->GenerateBinaryCode (_bc, _s, OpType::Load);
 			m_func_id->GenerateBinaryCode (_bc, _s, OpType::Load);
-			_bc.GoTo ();
+			_bc.Invoke ((uint8_t) m_args.size ());
 			int32_t _end_pos = _bc.GetCodePos ();
 			//*(int32_t *) &_bc.GetCodes () [_pos + 1] = _end_pos;
 			IntDataType4 _d { .int32 = _end_pos, };

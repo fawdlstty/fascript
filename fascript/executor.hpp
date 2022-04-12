@@ -126,8 +126,9 @@ public:
 				case OpCode::DIV:					break;
 				case OpCode::MOD:					break;
 				case OpCode::LOAD_POS:				_ss << std::format ("0x{:X}", GetInt<int32_t> ()); break;
+				case OpCode::INVOKE:				_ss << std::format ("{} (need check arg count)", GetInt<uint8_t> ()); break;
 				case OpCode::GOTO:					break;
-				case OpCode::RET:					_ss << std::format ("{}", GetInt<uint8_t> ()); break;
+				case OpCode::RET:					_ss << std::format ("{} (clear arg count)", GetInt<uint8_t> ()); break;
 				default:							throw Exception::NotImplement ();
 			}
 			_ss << "\n";

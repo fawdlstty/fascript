@@ -46,6 +46,7 @@ struct Generator {
 		}
 		_put_int (_var_id);
 	}
+	void Invoke (uint8_t _arg_count) { m_data.push_back ((uint8_t) OpCode::INVOKE); m_data.push_back (_arg_count); }
 	void GoTo () { m_data.push_back ((uint8_t) OpCode::GOTO); }
 	void Ignore () { m_data.push_back ((uint8_t) OpCode::IGNORE); }
 	void Return (uint8_t _arg_num) { m_data.push_back ((uint8_t) OpCode::RET); m_data.push_back (_arg_num); }
