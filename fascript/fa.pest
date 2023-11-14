@@ -1,0 +1,76 @@
+//! A rule for fa programming language
+
+WHITESPACE = _{ " " | "\t" }
+COMMENT    = _{ ("//" ~ (!NEWLINE ~ ANY)*) | ("/*" ~ (!"*/" ~ ANY)* ~ "*/") }
+LINE       = _{ (";" | NEWLINE)+ }
+COMMA      = _{ "," ~ LINE? }
+QYUAN_L    = _{ "(" ~ LINE? }
+QYUAN_R    = _{ LINE? ~ ")" }
+QFANG_L    = _{ "[" ~ LINE? }
+QFANG_R    = _{ LINE? ~ "]" }
+QHUA_L     = _{ "{" ~ LINE? }
+QHUA_R     = _{ LINE? ~ "}" }
+QJIAN_L    = _{ "<" ~ LINE? }
+QJIAN_R    = _{ LINE? ~ ">" }
+CHAR       = @{ 'A'..'Z' | 'a'..'z' | "_" }
+NCHAR      = @{ CHAR | NUM_CHAR }
+NUM_CHAR   = @{ '0'..'9' }
+NUM_BASE   = @{ NUM_CHAR ~ ("_" | NUM_CHAR)* }
+
+NullLiteral   =  { "null" }
+NumberLiteral = @{ "-"? ~ NUM_BASE ~ ("." ~ NUM_BASE)? }
+BoolLiteral   =  { "true" | "false" }
+StringLiteral = @{ "\"" ~ ("\\\"" | (!"\"" ~ ANY))* ~ "\"" }
+Literal       =  { NullLiteral | NumberLiteral | BoolLiteral | StringLiteral }
+
+Id = @{ CHAR ~ NCHAR* }
+// Ids =  { (Id ~ ".")* ~ Id }
+
+MapType     = { "map" ~ (QJIAN_L ~ Type ~ COMMA ~ Type ~ QJIAN_R)? }
+TupleType   = { QYUAN_L ~ (Type ~ COMMA)+ ~ Type ~ QYUAN_R }
+FuncType    = { "func" ~ QJIAN_L ~ (Type ~ COMMA)* ~ Type ~ QJIAN_R }
+BaseTypeStr = { "bool" | "dynamic" | "float" | "int" | "string" }
+BaseType    = { BaseTypeStr | MapType | TupleType | FuncType }
+VoidType    = { "void" }
+TypeSuffix  = { "[]" | "?" }
+Type        = { VoidType | (BaseType ~ TypeSuffix*) }
+
+ArgPair                   = { Type? ~ Id }
+ArgPairs                  = { QYUAN_L ~ ((ArgPair ~ COMMA)? ~ ArgPair)? ~ QYUAN_R }
+FuncBody                  = { ("=>" ~ Stmt) | (QHUA_L ~ Stmt* ~ QHUA_R) }
+LambdaExpr                = { (Id | ArgPairs) ~ FuncBody }
+NewExpr                   = { QHUA_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QHUA_R }
+TuplePair                 = { Id ~ ":" ~ Expr }
+TupleExpr                 = { QYUAN_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QYUAN_R }
+QuotExpr                  = { QYUAN_L ~ Expr ~ QYUAN_R }
+ArrayExpr                 = { QFANG_L ~ (Expr ~ (COMMA ~ Expr)*)? ~ QFANG_R }
+BaseExpr                  = { Literal | NewExpr | LambdaExpr | TupleExpr | QuotExpr | Id | ArrayExpr }
+BaseExprPrefix            = { "-" | "++" | "--" | "~" | "!" }
+BaseExprSuffixInvoke      = { QYUAN_L ~ (Expr ~ (COMMA ~ Expr)*)? ~ QYUAN_R }
+Expr1                     = { BaseExpr }
+Expr2                     = { BaseExpr }
+BaseExprSuffixArrayAccess = { QFANG_L ~ Expr1? ~ (".." ~ Expr2?)? ~ QFANG_R }
+BaseExprSuffixAccess      = { "." ~ Id }
+BaseExprSuffix            = {
+    BaseExprSuffixInvoke
+  | BaseExprSuffixArrayAccess
+  | BaseExprSuffixAccess
+}
+StrongExpr                = { BaseExprPrefix* ~ BaseExpr ~ BaseExprSuffix* }
+Middle3OpExpr             = { StrongExpr ~ "?" ~ StrongExpr ~ ":" ~ StrongExpr }
+CalcOp                    = { "+" | "-" | "*" | "/" | "**" | "%" | "|" | "&" | "^" | "&&" | "||" | "<<" | ">>" | ">" | ">=" | "<" | "<=" | "==" | "!=" | "??" }
+AssignOp                  = { "=" | "+=" | "-=" | "*=" | "/=" | "**=" | "%=" | "|=" | "&=" | "^=" | "&&=" | "||=" | "<<=" | ">>=" | "??=" }
+Middle2OpExpr             = { StrongExpr ~ (CalcOp ~ StrongExpr)* }
+AwaitExpr                 = { "await" ~ StrongExpr }
+MiddleExpr                = { Middle3OpExpr | Middle2OpExpr | AwaitExpr }
+NameExpr                  = { Id }
+Expr                      = { (NameExpr ~ AssignOp)* ~ MiddleExpr }
+
+DefVarItem = { Id ~ "=" ~ Expr }
+DefVarStmt = { (Type | "var") ~ DefVarItem ~ ("," ~ DefVarItem)* ~ LINE }
+ExprStmt   = { Expr ~ LINE }
+FuncStmt   = { Type ~ (Type ~ ".")? ~ Id ~ ArgPairs ~ FuncBody ~ LINE }
+Stmt       = { DefVarStmt | ExprStmt | FuncStmt }
+
+// FuncBlock   = { "func" ~ ("Object" ~ ".")? ~ Id ~ ArgPairs? ~ FuncBody ~ LINE }
+ProgramFile = { SOI ~ LINE? ~ Stmt* ~ EOI }
