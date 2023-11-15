@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 fascript = { path = "../fascript" }
+tokio = { version = "1.34", features = ["macros", "rt-multi-thread"] }
