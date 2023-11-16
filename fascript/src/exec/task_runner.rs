@@ -1,5 +1,4 @@
 use crate::ast::blocks::func::AstFunc;
-use crate::ast::exprs::func_expr::AstFuncExpr;
 use crate::ast::exprs::invoke_expr::AstInvokeExpr;
 use crate::ast::exprs::op2_expr::AstOp2Expr;
 use crate::ast::exprs::{value_expr::AstValueExpr, AstExpr};
@@ -66,8 +65,8 @@ impl TaskRunner {
 
     pub fn eval_stmt(&mut self, stmt: AstStmt) {
         match stmt {
-            AstStmt::DefVar(_def) => {
-                for def_item in _def.def_vars {
+            AstStmt::DefVar(def_stmt) => {
+                for def_item in def_stmt.def_vars {
                     self.add_var(
                         def_item.var_name.clone(),
                         def_item.var_type.clone(),
@@ -79,6 +78,25 @@ impl TaskRunner {
                 self.eval_expr(expr);
                 ()
             }
+            AstStmt::For(for_stmt) => match for_stmt.iter_items {
+                AstExpr::Index(index_expr) => {
+                    let left = match index_expr.left {
+                        Some(left) => *left,
+                        None => todo!(),
+                    };
+                    let left = self.eval_expr(left).as_int();
+                    let right = match index_expr.right {
+                        Some(right) => *right,
+                        None => todo!(),
+                    };
+                    let right = self.eval_expr(right).as_int();
+                    for i in left..right {
+                        // TODO
+                        todo!()
+                    }
+                }
+                _ => todo!(),
+            },
         }
     }
 
@@ -86,6 +104,7 @@ impl TaskRunner {
         match expr {
             AstExpr::None => todo!(),
             AstExpr::Func(func_expr) => AstValueExpr::Func(Box::new(func_expr)),
+            AstExpr::Index(_) => unreachable!(),
             AstExpr::Invoke(invoke_expr) => self.eval_func_expr(&invoke_expr),
             AstExpr::Op1(_) => todo!(),
             AstExpr::Op2(op2_expr) => self.eval_op2_expr(&&op2_expr),
@@ -93,7 +112,6 @@ impl TaskRunner {
             AstExpr::Temp(_) => todo!(),
             AstExpr::TypeWrap(_) => todo!(),
             AstExpr::Value(val) => val,
-            //
         }
     }
 
@@ -184,7 +202,7 @@ impl TaskRunner {
     }
 
     fn add_level_invoke(&mut self, func: &AstFunc, args: &Vec<AstExpr>) {
-        let mut args = args;
+        let args = args;
         let mut variables = Variables::new(VariablesType::InvokeArguments);
         let arg_types = func.get_arg_types();
         for (idx, var_name) in func.get_arg_names().iter().enumerate() {

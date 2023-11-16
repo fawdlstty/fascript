@@ -25,7 +25,6 @@ impl ParseExt for AstArrayType {
         let mut _temp_type = AstArrayType {
             base_type: Box::new(AstType::Void),
         };
-        let mut is_key = true;
         for root_item in root.into_inner() {
             match root_item.as_rule() {
                 Rule::Type => _temp_type.base_type = Box::new(AstType::parse(root_item)),

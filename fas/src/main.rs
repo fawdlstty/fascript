@@ -1,10 +1,12 @@
-use fascript::fascript::Fascript;
+use fascript::Fascript;
 
 #[tokio::main]
 async fn main() {
     let code_str = r#"
     void main() {
-        println("hello world")
+        for i in 1..10 {
+            println("hello world")
+        }
     }
     main()
     "#;

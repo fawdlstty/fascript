@@ -1,4 +1,5 @@
 pub mod func_expr;
+pub mod index_expr;
 pub mod invoke_expr;
 pub mod op1_expr;
 pub mod op2_expr;
@@ -7,7 +8,6 @@ pub mod temp_expr;
 pub mod type_wrap_expr;
 pub mod value_expr;
 
-use self::func_expr::AstFuncExpr;
 use self::invoke_expr::AstInvokeExpr;
 use self::op1_expr::AstOp1Expr;
 use self::op2_expr::AstOp2Expr;
@@ -15,6 +15,7 @@ use self::switch_expr::AstSwitchExpr;
 use self::temp_expr::AstTempExpr;
 use self::type_wrap_expr::AstTypeWrapExpr;
 use self::value_expr::AstValueExpr;
+use self::{func_expr::AstFuncExpr, index_expr::AstIndexExpr};
 use super::{types::AstType, ParseExt, PestApiExt, Rule};
 use crate::utils::{oper_utils::OperUtils, str_utils::StrUtils};
 
@@ -22,6 +23,7 @@ use crate::utils::{oper_utils::OperUtils, str_utils::StrUtils};
 pub enum AstExpr {
     None,
     Func(AstFuncExpr),
+    Index(AstIndexExpr),
     Invoke(AstInvokeExpr),
     Op1(AstOp1Expr),
     Op2(AstOp2Expr),
@@ -192,6 +194,7 @@ impl AstExpr {
         match self {
             AstExpr::None => AstType::None,
             AstExpr::Func(func_expr) => func_expr.func.get_type(),
+            AstExpr::Index(_) => AstType::Index,
             AstExpr::Invoke(invoke_expr) => todo!(),
             AstExpr::Op1(_) => todo!(),
             AstExpr::Op2(op2_expr) => op2_expr.get_type(),

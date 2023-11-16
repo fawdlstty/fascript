@@ -35,6 +35,9 @@ VoidType    = { "void" }
 TypeSuffix  = { "[]" | "?" }
 Type        = { VoidType | (BaseType ~ TypeSuffix*) }
 
+Expr1                     = { BaseExpr }
+Expr2                     = { BaseExpr }
+IndexExpr                 = { Expr1? ~ ".." ~ Expr2? }
 ArgPair                   = { Type? ~ Id }
 ArgPairs                  = { QYUAN_L ~ ((ArgPair ~ COMMA)? ~ ArgPair)? ~ QYUAN_R }
 FuncBody                  = { ("=>" ~ Stmt) | (QHUA_L ~ Stmt* ~ QHUA_R) }
@@ -43,13 +46,11 @@ NewExpr                   = { QHUA_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QHUA_R
 TuplePair                 = { Id ~ ":" ~ Expr }
 TupleExpr                 = { QYUAN_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QYUAN_R }
 QuotExpr                  = { QYUAN_L ~ Expr ~ QYUAN_R }
-ArrayExpr                 = { QFANG_L ~ (Expr ~ (COMMA ~ Expr)*)? ~ QFANG_R }
+ArrayExpr                 = { QFANG_L ~ (Expr | IndexExpr) ~ QFANG_R }
 BaseExpr                  = { Literal | NewExpr | LambdaExpr | TupleExpr | QuotExpr | Id | ArrayExpr }
 BaseExprPrefix            = { "-" | "++" | "--" | "~" | "!" }
 BaseExprSuffixInvoke      = { QYUAN_L ~ (Expr ~ (COMMA ~ Expr)*)? ~ QYUAN_R }
-Expr1                     = { BaseExpr }
-Expr2                     = { BaseExpr }
-BaseExprSuffixArrayAccess = { QFANG_L ~ Expr1? ~ (".." ~ Expr2?)? ~ QFANG_R }
+BaseExprSuffixArrayAccess = { QFANG_L ~ IndexExpr ~ QFANG_R }
 BaseExprSuffixAccess      = { "." ~ Id }
 BaseExprSuffix            = {
     BaseExprSuffixInvoke
@@ -68,9 +69,10 @@ Expr                      = { (NameExpr ~ AssignOp)* ~ MiddleExpr }
 
 DefVarItem = { Id ~ "=" ~ Expr }
 DefVarStmt = { (Type | "var") ~ DefVarItem ~ ("," ~ DefVarItem)* ~ LINE }
-ExprStmt   = { Expr ~ LINE }
+ForStmt    = { "for" ~ Id ~ "in" ~ (Expr | IndexExpr) ~ QHUA_L ~ Stmt* ~ QHUA_R }
 FuncStmt   = { Type ~ (Type ~ ".")? ~ Id ~ ArgPairs ~ FuncBody ~ LINE }
-Stmt       = { DefVarStmt | ExprStmt | FuncStmt }
+ExprStmt   = { Expr ~ LINE }
+Stmt       = { DefVarStmt | ForStmt | FuncStmt | ExprStmt }
 
 // FuncBlock   = { "func" ~ ("Object" ~ ".")? ~ Id ~ ArgPairs? ~ FuncBody ~ LINE }
 ProgramFile = { SOI ~ LINE? ~ Stmt* ~ EOI }

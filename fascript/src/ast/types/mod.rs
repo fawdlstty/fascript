@@ -16,6 +16,7 @@ pub enum AstType {
     Dynamic,
     Float,
     Func(AstFuncType),
+    Index,
     Int,
     Map(AstMapType),
     String,
