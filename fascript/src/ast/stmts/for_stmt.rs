@@ -28,7 +28,7 @@ impl ParseExt for AstForStmt {
             match root_item.as_rule() {
                 Rule::Id => for_stmt.iter_name = root_item.as_str().to_string(),
                 Rule::Expr => for_stmt.iter_items = AstExpr::parse(root_item),
-                Rule::IndexExpr => for_stmt.iter_items = todo!(), //AstExpr::parse(root_item),
+                Rule::IndexExpr => for_stmt.iter_items = AstExpr::parse_index_expr(root_item),
                 Rule::Stmt => for_stmt.stmts.push(AstStmt::parse(root_item)),
                 _ => unreachable!(),
             }

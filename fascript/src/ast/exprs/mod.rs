@@ -179,6 +179,27 @@ impl AstExpr {
         }
     }
 
+    pub fn parse_index_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
+        let mut index_expr = AstIndexExpr {
+            left: None,
+            right: None,
+        };
+        for root_item in root.into_inner() {
+            match root_item.as_rule() {
+                Rule::Expr1 => {
+                    let root_item2 = root_item.into_inner().next().unwrap();
+                    index_expr.left = Some(Box::new(AstExpr::parse_base_expr(root_item2)));
+                }
+                Rule::Expr2 => {
+                    let root_item2 = root_item.into_inner().next().unwrap();
+                    index_expr.right = Some(Box::new(AstExpr::parse_base_expr(root_item2)));
+                }
+                _ => unreachable!(),
+            }
+        }
+        AstExpr::Index(index_expr)
+    }
+
     fn parse_exprs(root: pest::iterators::Pair<'_, Rule>) -> Vec<Self> {
         let mut exprs = vec![];
         for root_item in root.into_inner() {

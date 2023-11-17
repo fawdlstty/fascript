@@ -4,7 +4,7 @@ use fascript::Fascript;
 async fn main() {
     let code_str = r#"
     void main() {
-        for i in 1..10 {
+        for i in 0..5 {
             println("hello world")
         }
     }

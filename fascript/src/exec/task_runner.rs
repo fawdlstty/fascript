@@ -67,7 +67,7 @@ impl TaskRunner {
         match stmt {
             AstStmt::DefVar(def_stmt) => {
                 for def_item in def_stmt.def_vars {
-                    self.add_var(
+                    self.set_var(
                         def_item.var_name.clone(),
                         def_item.var_type.clone(),
                         def_item.init_value.clone(),
@@ -91,8 +91,14 @@ impl TaskRunner {
                     };
                     let right = self.eval_expr(right).as_int();
                     for i in left..right {
-                        // TODO
-                        todo!()
+                        self.set_var(
+                            for_stmt.iter_name.clone(),
+                            AstType::Int,
+                            AstValueExpr::from_int(i),
+                        );
+                        for stmt in for_stmt.stmts.clone() {
+                            self.eval_stmt(stmt);
+                        }
                     }
                 }
                 _ => todo!(),
@@ -228,7 +234,7 @@ impl TaskRunner {
         }
     }
 
-    fn add_var(&mut self, var_name: String, var_type: AstType, var_value: AstExpr) {
+    fn set_var(&mut self, var_name: String, var_type: AstType, var_value: AstExpr) {
         let var_value = self.eval_expr(var_value);
         let bindings = self.variabless.last_mut().unwrap();
         let vars = &mut bindings.vars;

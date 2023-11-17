@@ -46,7 +46,7 @@ NewExpr                   = { QHUA_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QHUA_R
 TuplePair                 = { Id ~ ":" ~ Expr }
 TupleExpr                 = { QYUAN_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QYUAN_R }
 QuotExpr                  = { QYUAN_L ~ Expr ~ QYUAN_R }
-ArrayExpr                 = { QFANG_L ~ (Expr | IndexExpr) ~ QFANG_R }
+ArrayExpr                 = { QFANG_L ~ (IndexExpr | Expr) ~ QFANG_R }
 BaseExpr                  = { Literal | NewExpr | LambdaExpr | TupleExpr | QuotExpr | Id | ArrayExpr }
 BaseExprPrefix            = { "-" | "++" | "--" | "~" | "!" }
 BaseExprSuffixInvoke      = { QYUAN_L ~ (Expr ~ (COMMA ~ Expr)*)? ~ QYUAN_R }
@@ -69,7 +69,7 @@ Expr                      = { (NameExpr ~ AssignOp)* ~ MiddleExpr }
 
 DefVarItem = { Id ~ "=" ~ Expr }
 DefVarStmt = { (Type | "var") ~ DefVarItem ~ ("," ~ DefVarItem)* ~ LINE }
-ForStmt    = { "for" ~ Id ~ "in" ~ (Expr | IndexExpr) ~ QHUA_L ~ Stmt* ~ QHUA_R }
+ForStmt    = { "for" ~ Id ~ "in" ~ (IndexExpr | Expr) ~ QHUA_L ~ Stmt* ~ QHUA_R }
 FuncStmt   = { Type ~ (Type ~ ".")? ~ Id ~ ArgPairs ~ FuncBody ~ LINE }
 ExprStmt   = { Expr ~ LINE }
 Stmt       = { DefVarStmt | ForStmt | FuncStmt | ExprStmt }
