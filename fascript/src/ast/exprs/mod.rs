@@ -34,7 +34,7 @@ pub enum AstExpr {
 }
 
 impl AstExpr {
-    fn parse_middle_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
+    pub fn parse_middle_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let mut expr = None;
         for root_item in root.into_inner() {
             match root_item.as_rule() {

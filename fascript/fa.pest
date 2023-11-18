@@ -67,12 +67,20 @@ MiddleExpr                = { Middle3OpExpr | Middle2OpExpr | AwaitExpr }
 NameExpr                  = { Id }
 Expr                      = { (NameExpr ~ AssignOp)* ~ MiddleExpr }
 
-DefVarItem = { Id ~ "=" ~ Expr }
-DefVarStmt = { (Type | "var") ~ DefVarItem ~ ("," ~ DefVarItem)* ~ LINE }
-ForStmt    = { "for" ~ Id ~ "in" ~ (IndexExpr | Expr) ~ QHUA_L ~ Stmt* ~ QHUA_R }
-FuncStmt   = { Type ~ (Type ~ ".")? ~ Id ~ ArgPairs ~ FuncBody ~ LINE }
-ExprStmt   = { Expr ~ LINE }
-Stmt       = { DefVarStmt | ForStmt | FuncStmt | ExprStmt }
+LoopLabel      = { Id }
+ForStmt        = { (LoopLabel ~ ":")? ~ "for" ~ Id ~ "in" ~ (IndexExpr | MiddleExpr) ~ QHUA_L ~ Stmt* ~ QHUA_R }
+IfPart         = { "if" ~ MiddleExpr ~ QHUA_L ~ Stmt* ~ QHUA_R }
+IfEndPart      = { QHUA_L ~ Stmt* ~ QHUA_R }
+IfStmt         = { IfPart ~ ("else" ~ IfPart)* ~ ("else" ~ IfEndPart)? ~ LINE }
+BreakStmt      = { "break" ~ Id? ~ LINE }
+ContinueStmt   = { "continue" ~ Id? ~ LINE }
+DoWhileStmt    = { "do" ~ QHUA_L ~ Stmt* ~ QHUA_R ~ "while" ~ MiddleExpr ~ LINE }
+WhileStmt      = { "while" ~ MiddleExpr ~ QHUA_L ~ Stmt* ~ QHUA_R ~ LINE }
+DefVarItemPart = { Id ~ "=" ~ MiddleExpr }
+DefVarStmt     = { (Type | "var") ~ DefVarItemPart ~ ("," ~ DefVarItemPart)* ~ LINE }
+FuncStmt       = { Type ~ (Type ~ ".")? ~ Id ~ ArgPairs ~ FuncBody ~ LINE }
+ExprStmt       = { Expr ~ LINE }
+Stmt           = { ForStmt | IfStmt | BreakStmt | ContinueStmt | DoWhileStmt | WhileStmt | DefVarStmt | FuncStmt | ExprStmt }
 
 // FuncBlock   = { "func" ~ ("Object" ~ ".")? ~ Id ~ ArgPairs? ~ FuncBody ~ LINE }
 ProgramFile = { SOI ~ LINE? ~ Stmt* ~ EOI }

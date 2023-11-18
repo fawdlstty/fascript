@@ -1,19 +1,45 @@
+use super::native_exprs::NativeExprs;
+use super::op2_calc::Op2Calc;
 use crate::ast::blocks::func::AstFunc;
 use crate::ast::exprs::invoke_expr::AstInvokeExpr;
 use crate::ast::exprs::op2_expr::AstOp2Expr;
-use crate::ast::exprs::{value_expr::AstValueExpr, AstExpr};
+use crate::ast::exprs::value_expr::AstValueExpr;
+use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
 use crate::ast::types::AstType;
 use crate::utils::oper_utils::OperUtils;
 use std::collections::HashMap;
 
-use super::native_exprs::NativeExprs;
-use super::op2_calc::Op2Calc;
+macro_rules! process_loop_ctrl {
+    ($self:expr, $stmt:expr) => {
+        match &$self.loop_ctrl {
+            LoopControl::None => {}
+            LoopControl::Continue(label) => {
+                if label == &$stmt.label {
+                    $self.loop_ctrl = LoopControl::None;
+                }
+            }
+            LoopControl::Break(label) => {
+                if label == &$stmt.label {
+                    $self.loop_ctrl = LoopControl::None;
+                }
+                break;
+            }
+        };
+    };
+}
 
-#[derive(Clone)]
+#[derive(PartialEq, Eq)]
+pub enum LoopControl {
+    None,
+    Continue(String),
+    Break(String),
+}
+
+#[derive(Clone, Debug)]
 pub struct VariableItem {
-    var_type: AstType,
-    var_value: AstValueExpr,
+    pub var_type: AstType,
+    pub var_value: AstValueExpr,
 }
 
 impl VariableItem {
@@ -28,12 +54,13 @@ impl VariableItem {
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Debug)]
 pub enum VariablesType {
     IndentVariables,
     InvokeArguments,
 }
 
+#[derive(Debug)]
 pub struct Variables {
     vars: HashMap<String, VariableItem>,
     vtype: VariablesType,
@@ -51,6 +78,7 @@ impl Variables {
 pub struct TaskRunner {
     variabless: Vec<Variables>,
     ret_value: Option<AstValueExpr>,
+    loop_ctrl: LoopControl,
 }
 
 impl TaskRunner {
@@ -58,22 +86,42 @@ impl TaskRunner {
         let mut ret = TaskRunner {
             variabless: vec![],
             ret_value: None,
+            loop_ctrl: LoopControl::None,
         };
         ret.add_level();
         ret
     }
 
     pub fn eval_stmt(&mut self, stmt: AstStmt) {
+        if self.loop_ctrl != LoopControl::None {
+            return;
+        }
         match stmt {
+            AstStmt::Break(break_stmt) => self.loop_ctrl = LoopControl::Break(break_stmt.label),
+            AstStmt::Continue(continue_stmt) => {
+                self.loop_ctrl = LoopControl::Continue(continue_stmt.label)
+            }
             AstStmt::DefVar(def_stmt) => {
                 for def_item in def_stmt.def_vars {
-                    self.set_var(
+                    let var_value = self.eval_expr(def_item.init_value.clone());
+                    self.add_var(
                         def_item.var_name.clone(),
                         def_item.var_type.clone(),
-                        def_item.init_value.clone(),
+                        var_value,
                     )
                 }
             }
+            AstStmt::DoWhile(do_while_stmt) => loop {
+                self.add_level();
+                self.eval_stmts(do_while_stmt.stmts.clone());
+                process_loop_ctrl!(self, do_while_stmt);
+                self.sub_level();
+                //
+                let cond_expr = self.eval_expr(do_while_stmt.cond_expr.clone()).as_bool();
+                if !cond_expr {
+                    break;
+                }
+            },
             AstStmt::Expr(expr) => {
                 self.eval_expr(expr);
                 ()
@@ -90,19 +138,52 @@ impl TaskRunner {
                         None => todo!(),
                     };
                     let right = self.eval_expr(right).as_int();
+                    //
                     for i in left..right {
-                        self.set_var(
+                        self.add_level();
+                        self.add_var(
                             for_stmt.iter_name.clone(),
                             AstType::Int,
-                            AstValueExpr::from_int(i),
+                            AstValueExpr::Int(i),
                         );
-                        for stmt in for_stmt.stmts.clone() {
-                            self.eval_stmt(stmt);
-                        }
+                        self.eval_stmts(for_stmt.stmts.clone());
+                        process_loop_ctrl!(self, for_stmt);
+                        self.sub_level();
                     }
                 }
                 _ => todo!(),
             },
+            AstStmt::If(if_stmt) => {
+                let mut is_cond = false;
+                for (index, cond_expr) in if_stmt.con_exprs.iter().enumerate() {
+                    let cond = self.eval_expr(cond_expr.clone()).as_bool();
+                    if cond {
+                        is_cond = true;
+                        self.eval_stmts(if_stmt.stmtss[index].clone());
+                        break;
+                    }
+                }
+                if !is_cond && if_stmt.stmtss.len() > if_stmt.con_exprs.len() {
+                    self.eval_stmts(if_stmt.stmtss.last().unwrap().clone());
+                }
+            }
+            AstStmt::While(while_stmt) => loop {
+                let cond_expr = self.eval_expr(while_stmt.cond_expr.clone()).as_bool();
+                if !cond_expr {
+                    break;
+                }
+                //
+                self.add_level();
+                self.eval_stmts(while_stmt.stmts.clone());
+                process_loop_ctrl!(self, while_stmt);
+                self.sub_level();
+            },
+        }
+    }
+
+    pub fn eval_stmts(&mut self, stmts: Vec<AstStmt>) {
+        for stmt in stmts {
+            self.eval_stmt(stmt);
         }
     }
 
@@ -113,9 +194,18 @@ impl TaskRunner {
             AstExpr::Index(_) => unreachable!(),
             AstExpr::Invoke(invoke_expr) => self.eval_func_expr(&invoke_expr),
             AstExpr::Op1(_) => todo!(),
-            AstExpr::Op2(op2_expr) => self.eval_op2_expr(&&op2_expr),
+            AstExpr::Op2(op2_expr) => self.eval_op2_expr(&op2_expr),
             AstExpr::Switch(_) => todo!(),
-            AstExpr::Temp(_) => todo!(),
+            AstExpr::Temp(temp_expr) => match temp_expr.otype {
+                Some(base_type) => todo!(),
+                None => match self.find_var(&temp_expr.name) {
+                    Some(var_item) => var_item.var_value,
+                    None => {
+                        println!("{}", temp_expr.name);
+                        todo!()
+                    }
+                },
+            },
             AstExpr::TypeWrap(_) => todo!(),
             AstExpr::Value(val) => val,
         }
@@ -149,12 +239,23 @@ impl TaskRunner {
         if OperUtils::is_assign_op2(op) {
             if op == "=" {
                 let left_expr = *invoke_expr.left.clone();
-                println!("left_expr: {:?}", left_expr);
-                todo!()
+                let left_expr = match left_expr {
+                    AstExpr::Temp(left_expr) => left_expr,
+                    _ => todo!(),
+                };
+                match left_expr.otype {
+                    Some(_) => todo!(),
+                    None => {
+                        let var_item = self.find_var(&left_expr.name).unwrap();
+                        let mut value = self.eval_expr(*invoke_expr.right.clone());
+                        self.set_var_value(&left_expr.name, value);
+                        AstValueExpr::None
+                    }
+                }
             } else {
                 let tmp_op2 = AstOp2Expr::new(
                     *invoke_expr.left.clone(),
-                    op[..op.len()].to_string(),
+                    op[..(op.len() - 1)].to_string(),
                     *invoke_expr.right.clone(),
                 );
                 let tmp_op2 = AstOp2Expr::new(
@@ -234,8 +335,7 @@ impl TaskRunner {
         }
     }
 
-    fn set_var(&mut self, var_name: String, var_type: AstType, var_value: AstExpr) {
-        let var_value = self.eval_expr(var_value);
+    fn add_var(&mut self, var_name: String, var_type: AstType, var_value: AstValueExpr) {
         let bindings = self.variabless.last_mut().unwrap();
         let vars = &mut bindings.vars;
         match vars.get_mut(&var_name) {
@@ -256,14 +356,40 @@ impl TaskRunner {
         }
     }
 
-    fn find_var(&mut self, name: &str) -> Option<VariableItem> {
+    fn set_var_value(&mut self, var_name: &str, var_value: AstValueExpr) {
+        // find var in func
+        for variables in self.variabless.iter_mut().rev() {
+            if let Some(item) = variables.vars.get_mut(var_name) {
+                item.var_value = var_value;
+                return;
+            }
+            if variables.vtype == VariablesType::InvokeArguments {
+                break;
+            }
+        }
+
+        // find var in global
+        if let Some(item) = self.variabless[0].vars.get_mut(var_name) {
+            item.var_value = var_value;
+            return;
+        }
+        unreachable!()
+    }
+
+    fn find_var(&mut self, var_name: &str) -> Option<VariableItem> {
+        // find var in func
         for variables in self.variabless.iter().rev() {
-            if let Some(item) = variables.vars.get(name) {
+            if let Some(item) = variables.vars.get(var_name) {
                 return Some(item.clone());
             }
             if variables.vtype == VariablesType::InvokeArguments {
-                return None;
+                break;
             }
+        }
+
+        // find var in global
+        if let Some(item) = self.variabless[0].vars.get(var_name) {
+            return Some(item.clone());
         }
         return None;
     }

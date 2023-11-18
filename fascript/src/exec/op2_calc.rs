@@ -1,5 +1,3 @@
-use std::ops::Index;
-
 use crate::ast::{exprs::value_expr::AstValueExpr, types::AstType};
 
 pub struct Op2Calc {}
@@ -11,8 +9,13 @@ impl Op2Calc {
         match (left_type, right_type) {
             (AstType::None, _) => todo!(),
             (_, AstType::None) => todo!(),
-            (AstType::Array(_), AstType::Array(_)) => {
-                Self::calc_array(left.as_array(), op, right.as_array())
+            (AstType::Array(a), AstType::Array(b)) if a == b => {
+                let base_type = *a.base_type.clone();
+                Self::calc_array(
+                    left.as_array(base_type.clone()),
+                    op,
+                    right.as_array(base_type.clone()),
+                )
             }
             (AstType::Bool, AstType::Bool) => Self::calc_bool(left.as_bool(), op, right.as_bool()),
             (AstType::Float, AstType::Float) => {

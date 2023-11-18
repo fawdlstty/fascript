@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
-use crate::ast::types::{array_type::AstArrayType, map_type::AstMapType, AstType};
-
 use super::{func_expr::AstFuncExpr, AstExpr};
+use crate::ast::types::{array_type::AstArrayType, map_type::AstMapType, AstType};
+use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub enum AstValueExpr {
@@ -105,9 +103,9 @@ impl AstValueExpr {
         }
     }
 
-    pub fn as_array(&self) -> Vec<AstValueExpr> {
+    pub fn as_array(&self, base_type: AstType) -> Vec<AstValueExpr> {
         match self {
-            AstValueExpr::Array(arr) => arr.clone(),
+            AstValueExpr::Array(arr) => arr.iter().map(|x| x.as_type(base_type.clone())).collect(),
             _ => unreachable!(),
         }
     }
@@ -132,6 +130,29 @@ impl AstValueExpr {
             AstValueExpr::Float(f) => f.round() as i64,
             AstValueExpr::Int(i) => i.clone(),
             _ => unreachable!(),
+        }
+    }
+
+    pub fn as_type(&self, dest_type: AstType) -> AstValueExpr {
+        if self.get_type() != dest_type {
+            match dest_type {
+                AstType::None => todo!(),
+                AstType::Array(arr_type) => {
+                    AstValueExpr::Array(self.as_array(*arr_type.base_type.clone()))
+                }
+                AstType::Bool => AstValueExpr::Bool(self.as_bool()),
+                AstType::Dynamic => self.clone(),
+                AstType::Float => AstValueExpr::Float(self.as_float()),
+                AstType::Func(_) => todo!(),
+                AstType::Index => todo!(),
+                AstType::Int => AstValueExpr::Int(self.as_int()),
+                AstType::Map(_) => todo!(),
+                AstType::String => AstValueExpr::String(self.as_str()),
+                AstType::Tuple(_) => todo!(),
+                AstType::Void => AstValueExpr::None,
+            }
+        } else {
+            self.clone()
         }
     }
 }

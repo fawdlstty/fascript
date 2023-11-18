@@ -4,7 +4,15 @@ use fascript::Fascript;
 async fn main() {
     let code_str = r#"
     void main() {
-        for i in 0..5 {
+        func()
+    }
+    void func() {
+        int n = 0
+        while true {
+            n += 1
+            if n == 4 {
+                break
+            }
             println("hello world")
         }
     }
