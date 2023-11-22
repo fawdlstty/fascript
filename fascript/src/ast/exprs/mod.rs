@@ -14,7 +14,7 @@ use self::op2_expr::AstOp2Expr;
 use self::switch_expr::AstSwitchExpr;
 use self::temp_expr::AstTempExpr;
 use self::type_wrap_expr::AstTypeWrapExpr;
-use self::value_expr::AstValueExpr;
+use self::value_expr::FasValue;
 use self::{func_expr::AstFuncExpr, index_expr::AstIndexExpr};
 use super::{types::AstType, ParseExt, PestApiExt, Rule};
 use crate::utils::{oper_utils::OperUtils, str_utils::StrUtils};
@@ -30,7 +30,7 @@ pub enum AstExpr {
     Switch(AstSwitchExpr),
     Temp(AstTempExpr),
     TypeWrap(AstTypeWrapExpr),
-    Value(AstValueExpr),
+    Value(FasValue),
 }
 
 impl AstExpr {
@@ -64,8 +64,8 @@ impl AstExpr {
         AstExpr::Switch(AstSwitchExpr {
             expr: Box::new(expr),
             conds: vec![
-                AstValueExpr::from_bool(true),
-                AstValueExpr::from_bool(false),
+                AstExpr::Value(FasValue::Bool(true)),
+                AstExpr::Value(FasValue::Bool(false)),
             ],
             values: exprs,
         })
@@ -165,15 +165,15 @@ impl AstExpr {
         match root_item.as_rule() {
             Rule::NumberLiteral => {
                 let num_str = root_item.as_str();
-                if num_str.contains('.') {
-                    AstValueExpr::from_float(num_str.parse().unwrap())
-                } else {
-                    AstValueExpr::from_int(num_str.parse().unwrap())
-                }
+                AstExpr::Value(match num_str.contains('.') {
+                    true => FasValue::Float(num_str.parse().unwrap()),
+                    false => FasValue::Int(num_str.parse().unwrap()),
+                })
             }
-            Rule::BoolLiteral => AstValueExpr::from_bool(root_item.as_str() == "true"),
+            Rule::BoolLiteral => AstExpr::Value(FasValue::Bool(root_item.as_str() == "true")),
             Rule::StringLiteral => {
-                AstValueExpr::from_string(StrUtils::code_to_str(root_item.as_str()))
+                let str_value = StrUtils::code_to_str(root_item.as_str());
+                AstExpr::Value(FasValue::String(str_value))
             }
             _ => unreachable!(),
         }

@@ -1,8 +1,9 @@
-use crate::ast::exprs::value_expr::AstValueExpr;
+use crate::ast::exprs::value_expr::FasValue;
 use crate::ast::stmts::AstStmt;
 use crate::ast::types::{func_type::AstFuncType, AstType};
-use crate::ast::*;
+use crate::{ast::*, FasCallable};
 use std::fmt::Debug;
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub enum AstFunc {
@@ -34,7 +35,7 @@ impl AstFunc {
 
     pub fn get_arg_names(&self) -> Vec<String> {
         match self {
-            AstFunc::AstNativeFunc(func) => func.arg_names.clone(),
+            AstFunc::AstNativeFunc(func) => func.arg_types.iter().map(|_| "".to_string()).collect(),
             AstFunc::AstManagedFunc(func) => func.arg_names.clone(),
         }
     }
@@ -50,13 +51,18 @@ impl ParseExt for AstFunc {
     }
 }
 
-#[derive(Clone)]
+//#[derive(Clone)]
 pub struct AstNativeFunc {
     pub ret_type: AstType,
     pub name: String,
     pub arg_types: Vec<AstType>,
-    pub arg_names: Vec<String>,
-    pub func_impl: Box<fn(Vec<AstValueExpr>) -> AstValueExpr>,
+    pub func_impl: Box<dyn FasCallable>,
+}
+
+impl Clone for AstNativeFunc {
+    fn clone(&self) -> Self {
+        todo!()
+    }
 }
 
 impl Debug for AstNativeFunc {
@@ -65,7 +71,6 @@ impl Debug for AstNativeFunc {
             .field("ret_type", &self.ret_type)
             .field("name", &self.name)
             .field("arg_types", &self.arg_types)
-            .field("arg_names", &self.arg_names)
             .finish()
     }
 }

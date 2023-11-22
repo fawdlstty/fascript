@@ -3,7 +3,7 @@ use super::op2_calc::Op2Calc;
 use crate::ast::blocks::func::AstFunc;
 use crate::ast::exprs::invoke_expr::AstInvokeExpr;
 use crate::ast::exprs::op2_expr::AstOp2Expr;
-use crate::ast::exprs::value_expr::AstValueExpr;
+use crate::ast::exprs::value_expr::FasValue;
 use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
 use crate::ast::types::AstType;
@@ -39,11 +39,11 @@ pub enum LoopControl {
 #[derive(Clone, Debug)]
 pub struct VariableItem {
     pub var_type: AstType,
-    pub var_value: AstValueExpr,
+    pub var_value: FasValue,
 }
 
 impl VariableItem {
-    pub fn new(var_type: AstType, var_value: AstValueExpr) -> VariableItem {
+    pub fn new(var_type: AstType, var_value: FasValue) -> VariableItem {
         if var_value.get_type() != var_type {
             todo!()
         }
@@ -77,7 +77,7 @@ impl Variables {
 
 pub struct TaskRunner {
     variabless: Vec<Variables>,
-    ret_value: Option<AstValueExpr>,
+    ret_value: Option<FasValue>,
     loop_ctrl: LoopControl,
 }
 
@@ -141,11 +141,7 @@ impl TaskRunner {
                     //
                     for i in left..right {
                         self.add_level();
-                        self.add_var(
-                            for_stmt.iter_name.clone(),
-                            AstType::Int,
-                            AstValueExpr::Int(i),
-                        );
+                        self.add_var(for_stmt.iter_name.clone(), AstType::Int, FasValue::Int(i));
                         self.eval_stmts(for_stmt.stmts.clone());
                         process_loop_ctrl!(self, for_stmt);
                         self.sub_level();
@@ -187,10 +183,10 @@ impl TaskRunner {
         }
     }
 
-    pub fn eval_expr(&mut self, expr: AstExpr) -> AstValueExpr {
+    pub fn eval_expr(&mut self, expr: AstExpr) -> FasValue {
         match expr {
             AstExpr::None => todo!(),
-            AstExpr::Func(func_expr) => AstValueExpr::Func(Box::new(func_expr)),
+            AstExpr::Func(func_expr) => FasValue::Func(Box::new(func_expr)),
             AstExpr::Index(_) => unreachable!(),
             AstExpr::Invoke(invoke_expr) => self.eval_func_expr(&invoke_expr),
             AstExpr::Op1(_) => todo!(),
@@ -211,7 +207,7 @@ impl TaskRunner {
         }
     }
 
-    fn eval_func_expr(&mut self, invoke_expr: &AstInvokeExpr) -> AstValueExpr {
+    fn eval_func_expr(&mut self, invoke_expr: &AstInvokeExpr) -> FasValue {
         match *invoke_expr.func.clone() {
             AstExpr::Temp(_temp) => match _temp.otype {
                 Some(_type) => {
@@ -223,7 +219,7 @@ impl TaskRunner {
                         Some(_var) => _var.var_value.clone(),
                         None => NativeExprs::get_expr(&_temp.name),
                     };
-                    if let AstValueExpr::Func(_func_expr) = _expr {
+                    if let FasValue::Func(_func_expr) = _expr {
                         self.invoke_func(*_func_expr.func, invoke_expr.arguments.clone())
                     } else {
                         todo!();
@@ -234,7 +230,7 @@ impl TaskRunner {
         }
     }
 
-    fn eval_op2_expr(&mut self, invoke_expr: &AstOp2Expr) -> AstValueExpr {
+    fn eval_op2_expr(&mut self, invoke_expr: &AstOp2Expr) -> FasValue {
         let op = &invoke_expr.op[..];
         if OperUtils::is_assign_op2(op) {
             if op == "=" {
@@ -249,7 +245,7 @@ impl TaskRunner {
                         let var_item = self.find_var(&left_expr.name).unwrap();
                         let mut value = self.eval_expr(*invoke_expr.right.clone());
                         self.set_var_value(&left_expr.name, value);
-                        AstValueExpr::None
+                        FasValue::None
                     }
                 }
             } else {
@@ -274,12 +270,14 @@ impl TaskRunner {
         }
     }
 
-    pub fn invoke_func(&mut self, func: AstFunc, args: Vec<AstExpr>) -> AstValueExpr {
+    pub fn invoke_func(&mut self, func: AstFunc, args: Vec<AstExpr>) -> FasValue {
         self.add_level_invoke(&func, &args);
-        let mut ret = AstValueExpr::None;
+        let mut ret = FasValue::None;
         match func {
             AstFunc::AstNativeFunc(func) => {
-                ret = (*func.func_impl)(args.into_iter().map(|x| self.eval_expr(x)).collect());
+                ret = func
+                    .func_impl
+                    .call(args.into_iter().map(|x| self.eval_expr(x)).collect());
             }
             AstFunc::AstManagedFunc(func) => {
                 for stmt in func.body_stmts {
@@ -297,7 +295,7 @@ impl TaskRunner {
         ret
     }
 
-    pub fn get_return_value(&mut self) -> Option<AstValueExpr> {
+    pub fn get_return_value(&mut self) -> Option<FasValue> {
         let mut ret_value = None;
         std::mem::swap(&mut ret_value, &mut self.ret_value);
         ret_value
@@ -335,7 +333,7 @@ impl TaskRunner {
         }
     }
 
-    fn add_var(&mut self, var_name: String, var_type: AstType, var_value: AstValueExpr) {
+    fn add_var(&mut self, var_name: String, var_type: AstType, var_value: FasValue) {
         let bindings = self.variabless.last_mut().unwrap();
         let vars = &mut bindings.vars;
         match vars.get_mut(&var_name) {
@@ -356,7 +354,7 @@ impl TaskRunner {
         }
     }
 
-    fn set_var_value(&mut self, var_name: &str, var_value: AstValueExpr) {
+    fn set_var_value(&mut self, var_name: &str, var_value: FasValue) {
         // find var in func
         for variables in self.variabless.iter_mut().rev() {
             if let Some(item) = variables.vars.get_mut(var_name) {
@@ -392,5 +390,20 @@ impl TaskRunner {
             return Some(item.clone());
         }
         return None;
+    }
+
+    pub fn set_global_value(&mut self, name: String, value: FasValue) {
+        match self.variabless[0].vars.get_mut(&name) {
+            Some(var_item) => {
+                var_item.var_type = value.get_type();
+                var_item.var_value = value;
+            }
+            None => {
+                self.variabless[0]
+                    .vars
+                    .insert(name, VariableItem::new(value.get_type(), value));
+                ()
+            }
+        }
     }
 }

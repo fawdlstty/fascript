@@ -1,9 +1,9 @@
-use crate::ast::{exprs::value_expr::AstValueExpr, types::AstType};
+use crate::ast::{exprs::value_expr::FasValue, types::AstType};
 
 pub struct Op2Calc {}
 
 impl Op2Calc {
-    pub fn calc(left: AstValueExpr, op: &str, right: AstValueExpr) -> AstValueExpr {
+    pub fn calc(left: FasValue, op: &str, right: FasValue) -> FasValue {
         let left_type = left.get_type();
         let right_type = right.get_type();
         match (left_type, right_type) {
@@ -43,7 +43,7 @@ impl Op2Calc {
         }
     }
 
-    // pub fn calc(left: AstValueExpr, op: &str, right: AstValueExpr) -> AstValueExpr {
+    // pub fn calc(left: FasValue, op: &str, right: FasValue) -> FasValue {
     //     match op {
     //         "+" => todo!(),
     //         "-" => todo!(),
@@ -69,7 +69,7 @@ impl Op2Calc {
     //     }
     // }
 
-    fn calc_array(left: Vec<AstValueExpr>, op: &str, right: Vec<AstValueExpr>) -> AstValueExpr {
+    fn calc_array(left: Vec<FasValue>, op: &str, right: Vec<FasValue>) -> FasValue {
         let mut left = left;
         let mut right = right;
         match op {
@@ -85,17 +85,17 @@ impl Op2Calc {
                 right.retain(|x| !left.contains(x));
                 left.extend(right);
             }
-            "==" => return AstValueExpr::Bool(left == right),
-            "!=" => return AstValueExpr::Bool(left != right),
-            "??" if left.len() == 0 => return AstValueExpr::Array(right),
-            "??" if left.len() != 0 => return AstValueExpr::Array(left),
+            "==" => return FasValue::Bool(left == right),
+            "!=" => return FasValue::Bool(left != right),
+            "??" if left.len() == 0 => return FasValue::Array(right),
+            "??" if left.len() != 0 => return FasValue::Array(left),
             _ => {}
         };
-        AstValueExpr::Array(left)
+        FasValue::Array(left)
     }
 
-    pub fn calc_bool(left: bool, op: &str, right: bool) -> AstValueExpr {
-        AstValueExpr::Bool(match op {
+    pub fn calc_bool(left: bool, op: &str, right: bool) -> FasValue {
+        FasValue::Bool(match op {
             "&&" => left && right,
             "||" => left || right,
             "==" => left == right,
@@ -104,32 +104,32 @@ impl Op2Calc {
         })
     }
 
-    pub fn calc_float(left: f64, op: &str, right: f64) -> AstValueExpr {
-        AstValueExpr::Float(match op {
+    pub fn calc_float(left: f64, op: &str, right: f64) -> FasValue {
+        FasValue::Float(match op {
             "+" => left + right,
             "-" => left - right,
             "*" => left * right,
             "/" => left / right,
             "**" => left.powf(right),
-            ">" => return AstValueExpr::Bool(left > right - 0.000001),
-            ">=" => return AstValueExpr::Bool(left >= right - 0.000001),
-            "<" => return AstValueExpr::Bool(left < right + 0.000001),
-            "<=" => return AstValueExpr::Bool(left <= right + 0.000001),
-            "==" => return AstValueExpr::Bool((left - right).abs() <= 0.000001),
-            "!=" => return AstValueExpr::Bool((left - right).abs() > 0.000001),
+            ">" => return FasValue::Bool(left > right - 0.000001),
+            ">=" => return FasValue::Bool(left >= right - 0.000001),
+            "<" => return FasValue::Bool(left < right + 0.000001),
+            "<=" => return FasValue::Bool(left <= right + 0.000001),
+            "==" => return FasValue::Bool((left - right).abs() <= 0.000001),
+            "!=" => return FasValue::Bool((left - right).abs() > 0.000001),
             _ => unreachable!(),
         })
     }
 
-    pub fn calc_int(left: i64, op: &str, right: i64) -> AstValueExpr {
-        AstValueExpr::Int(match op {
+    pub fn calc_int(left: i64, op: &str, right: i64) -> FasValue {
+        FasValue::Int(match op {
             "+" => left + right,
             "-" => left - right,
             "*" => left * right,
             "/" => left / right,
             "**" => match right >= 0 {
                 true => left.pow(right as u32),
-                false => return AstValueExpr::Float((left as f64).powf(right as f64)),
+                false => return FasValue::Float((left as f64).powf(right as f64)),
             },
             "%" => left % right,
             "|" => left | right,
@@ -137,27 +137,27 @@ impl Op2Calc {
             "^" => left ^ right,
             "<<" => left << right,
             ">>" => left >> right,
-            ">" => return AstValueExpr::Bool(left > right),
-            ">=" => return AstValueExpr::Bool(left >= right),
-            "<" => return AstValueExpr::Bool(left < right),
-            "<=" => return AstValueExpr::Bool(left <= right),
-            "==" => return AstValueExpr::Bool(left == right),
-            "!=" => return AstValueExpr::Bool(left != right),
+            ">" => return FasValue::Bool(left > right),
+            ">=" => return FasValue::Bool(left >= right),
+            "<" => return FasValue::Bool(left < right),
+            "<=" => return FasValue::Bool(left <= right),
+            "==" => return FasValue::Bool(left == right),
+            "!=" => return FasValue::Bool(left != right),
             _ => unreachable!(),
         })
     }
 
-    pub fn calc_string(left: String, op: &str, right: String) -> AstValueExpr {
-        AstValueExpr::String(match op {
+    pub fn calc_string(left: String, op: &str, right: String) -> FasValue {
+        FasValue::String(match op {
             "+" => format!("{}{}", left, right),
-            "==" => return AstValueExpr::Bool(left == right),
-            "!=" => return AstValueExpr::Bool(left != right),
+            "==" => return FasValue::Bool(left == right),
+            "!=" => return FasValue::Bool(left != right),
             _ => unreachable!(),
         })
     }
 
-    pub fn calc_string2(left: String, op: &str, right: i64) -> AstValueExpr {
-        AstValueExpr::String(match op {
+    pub fn calc_string2(left: String, op: &str, right: i64) -> FasValue {
+        FasValue::String(match op {
             "**" => left.repeat(right as usize),
             _ => unreachable!(),
         })

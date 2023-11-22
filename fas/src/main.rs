@@ -1,4 +1,4 @@
-use fascript::Fascript;
+use fascript::FasRuntime;
 
 #[tokio::main]
 async fn main() {
@@ -18,5 +18,10 @@ async fn main() {
     }
     main()
     "#;
-    _ = Fascript::eval(code_str).await;
+    let runtime = FasRuntime::new();
+    runtime.set_func("hello".into(), |a: String, b: String| -> i64 {
+        //println!("content: {}", content)
+        42
+    });
+    _ = runtime.run(code_str).await;
 }
