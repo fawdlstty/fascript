@@ -1,32 +1,27 @@
-use crate::ast::{
-    blocks::func::{AstFunc, AstNativeFunc},
-    exprs::{func_expr::AstFuncExpr, value_expr::FasValue},
-    types::AstType,
-};
+use crate::ast::blocks::func::{AstFunc, AstNativeFunc};
+use crate::ast::exprs::{func_expr::AstFuncExpr, value_expr::FasValue};
+use crate::ast::types::AstType;
+use crate::FasCallable;
+use crate::FasToWrapper;
 
 pub struct NativeExprs {}
 
 impl NativeExprs {
-    pub fn get_expr(name: &str) -> FasValue {
-        match name {
-            // "println" => FasValue::Func(Box::new(AstFuncExpr::new(AstFunc::AstNativeFunc(
-            //     AstNativeFunc {
-            //         ret_type: AstType::None,
-            //         name: "println".to_string(),
-            //         arg_types: vec![AstType::String],
-            //         func_impl: Box::new(Self::println_wrap),
-            //     },
-            // )))),
-            _ => todo!(),
-        }
+    fn make_func_impl<T: FasCallable>(func_name: String, f: T) -> FasValue {
+        f.to_fas_value(func_name.clone())
     }
 
-    fn println_wrap(args: Vec<FasValue>) -> FasValue {
-        let arg = match args.first() {
-            Some(arg) => arg.as_str(),
-            None => "".to_string(),
-        };
-        println!("{}", arg);
-        FasValue::None
+    pub fn make_func<T: FasToWrapper<U>, U>(func_name: String, f: T) -> FasValue {
+        Self::make_func_impl(func_name, f.convert())
+    }
+
+    pub fn get_expr(name: &str) -> FasValue {
+        match name {
+            "println" => Self::make_func("println".to_string(), |value: String| -> bool {
+                println!("{}", value);
+                true
+            }),
+            _ => todo!(),
+        }
     }
 }

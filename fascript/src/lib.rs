@@ -3,57 +3,12 @@ pub mod exec;
 pub mod utils;
 
 use crate::ast::exprs::value_expr::FasValue;
-use ast::blocks::func::{AstFunc, AstNativeFunc};
 use ast::blocks::program::AstProgram;
-use ast::exprs::func_expr::AstFuncExpr;
-use ast::types::AstType;
 use ast::FromStringExt;
 use exec::task_runner::TaskRunner;
-use std::marker::PhantomData;
-
-trait FasCallable {
-    fn call(&self, args: Vec<FasValue>) -> FasValue;
-}
-
-/////////////////////
-
-pub struct FuncWrapperWithTwo<T: Fn(T1, T2) -> R, T1, T2, R>(T, PhantomData<(T1, T2, R)>);
-
-impl<T, T1, T2, R> FasCallable for FuncWrapperWithTwo<T, T1, T2, R>
-where
-    T: Fn(T1, T2) -> R,
-    T1: From<FasValue>,
-    T2: From<FasValue>,
-    R: Into<FasValue>,
-{
-    fn call(&self, args: Vec<FasValue>) -> FasValue {
-        let f = T1::from(args[0].clone());
-        let s = T2::from(args[1].clone());
-        let r = (self.0)(f, s);
-        r.into()
-    }
-}
-
-pub trait ToWrapper<T> {
-    type Output: FasCallable;
-    fn convert(self) -> Self::Output;
-}
-
-impl<T, T1, T2, R> ToWrapper<(T1, T2, R)> for T
-where
-    T: Fn(T1, T2) -> R,
-    T1: From<FasValue>,
-    T2: From<FasValue>,
-    R: Into<FasValue>,
-{
-    type Output = FuncWrapperWithTwo<T, T1, T2, R>;
-
-    fn convert(self) -> Self::Output {
-        FuncWrapperWithTwo(self, PhantomData)
-    }
-}
-
-/////////////////////
+use lazy_static::lazy_static;
+use std::sync::Mutex;
+use utils::native_func_utils::{FasCallable, FasToWrapper};
 
 pub struct FasRuntime {
     runner: TaskRunner,
@@ -66,7 +21,7 @@ impl FasRuntime {
         }
     }
 
-    pub async fn eval(&mut self, code: &str) -> Option<FasValue> {
+    pub async fn run(&mut self, code: &str) -> Option<FasValue> {
         let stmts = match AstProgram::from_str(code) {
             Ok(program) => program.stmts,
             Err(err) => {
@@ -80,35 +35,19 @@ impl FasRuntime {
         self.runner.get_return_value()
     }
 
-    pub fn set_global_value(&mut self, name: String, value: FasValue) {
-        self.runner.set_global_value(name, value)
+    fn set_func_impl<T: FasCallable>(&mut self, func_name: String, f: T) {
+        let func = f.to_fas_value(func_name.clone());
+        self.runner.set_global_value(func_name, func)
     }
 
-    pub fn set_global_func(
-        &mut self,
-        name: String,
-        func_impl: Box<dyn FasCallable>,
-        arg_types: Vec<AstType>,
-        ret_type: AstType,
-    ) {
-        let native_func = AstNativeFunc {
-            ret_type,
-            name: name.clone(),
-            arg_types,
-            func_impl,
-        };
-        let func = Box::new(AstFuncExpr::new(AstFunc::AstNativeFunc(native_func)));
-        self.runner.set_global_value(name, FasValue::Func(func))
-    }
-
-    fn set_func_help<T: FasCallable>(&mut self, s: &str, f: T) {
-        // TODO
-    }
-
-    pub fn set_func<T: ToWrapper<U>, U>(&mut self, s: &str, f: T) {
-        self.set_func_help(s, f.convert());
+    pub fn set_func<T: FasToWrapper<U>, U>(&mut self, func_name: String, f: T) {
+        self.set_func_impl(func_name, f.convert());
     }
 }
+
+// lazy_static! {
+//     static ref RUNTIME_INST: Mutex<FasRuntime> = Mutex::new(Fascript::new_runtime());
+// }
 
 // pub struct Fascript {}
 
