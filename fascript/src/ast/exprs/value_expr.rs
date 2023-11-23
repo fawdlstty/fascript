@@ -62,7 +62,7 @@ impl FasValue {
                 };
                 AstMapType::new(AstType::String, value_type)
             }
-            FasValue::Func(f) => todo!(),
+            FasValue::Func(f) => f.func.get_type(),
         }
     }
 

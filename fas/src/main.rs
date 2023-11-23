@@ -17,9 +17,6 @@ async fn main() {
     println("hello world")
     "#;
     let mut runtime = FasRuntime::new();
-    //runtime.set_func("hello".into(), |a: String, b: String| -> i64 {
-    //    //println!("content: {}", content)
-    //    42
-    //});
+    //runtime.set_func("my_println".into(), |value: String| println!("{}", value));
     _ = runtime.run(code_str).await;
 }
