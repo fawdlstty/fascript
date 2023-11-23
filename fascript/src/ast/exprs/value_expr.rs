@@ -188,6 +188,12 @@ macro_rules! define_cast2 {
             }
         }
 
+        impl From<$type> for FasValue {
+            fn from(_: $type) -> FasValue {
+                FasValue::$t2v
+            }
+        }
+
         impl GetAstTypeTrait for $type {
             fn get_ast_type() -> AstType {
                 AstType::$t2v

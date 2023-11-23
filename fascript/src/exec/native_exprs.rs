@@ -17,9 +17,8 @@ impl NativeExprs {
 
     pub fn get_expr(name: &str) -> FasValue {
         match name {
-            "println" => Self::make_func("println".to_string(), |value: String| -> bool {
+            "println" => Self::make_func("println".to_string(), |value: String| {
                 println!("{}", value);
-                true
             }),
             _ => todo!(),
         }
