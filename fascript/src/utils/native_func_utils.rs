@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 
 pub trait FasCallable {
     fn call(&self, args: Vec<FasValue>) -> FasValue;
+    fn clone(&self) -> Box<dyn FasCallable + 'static>;
     fn to_fas_value(self, func_name: String) -> FasValue;
 }
 
@@ -19,7 +20,7 @@ pub struct FuncWrapper1<T: Fn(T1) -> R, T1, R>(T, PhantomData<(T1, R)>);
 
 impl<T, T1, R> FasCallable for FuncWrapper1<T, T1, R>
 where
-    T: Fn(T1) -> R + 'static,
+    T: Fn(T1) -> R + Clone + 'static,
     T1: From<FasValue> + GetAstTypeTrait + 'static,
     R: Into<FasValue> + GetAstTypeTrait + 'static,
 {
@@ -27,6 +28,11 @@ where
         let t1 = T1::from(args[0].clone());
         let r = (self.0)(t1);
         r.into()
+    }
+
+    fn clone(&self) -> Box<dyn FasCallable + 'static> {
+        let copy = Self(self.0.clone(), PhantomData);
+        Box::new(copy)
     }
 
     fn to_fas_value(self, func_name: String) -> FasValue {
@@ -44,7 +50,7 @@ where
 
 impl<T, T1, R> FasToWrapper<(T1, R)> for T
 where
-    T: Fn(T1) -> R + 'static,
+    T: Fn(T1) -> R + Clone + 'static,
     T1: From<FasValue> + GetAstTypeTrait + 'static,
     R: Into<FasValue> + GetAstTypeTrait + 'static,
 {
@@ -61,7 +67,7 @@ pub struct FuncWrapper2<T: Fn(T1, T2) -> R, T1, T2, R>(T, PhantomData<(T1, T2, R
 
 impl<T, T1, T2, R> FasCallable for FuncWrapper2<T, T1, T2, R>
 where
-    T: Fn(T1, T2) -> R + 'static,
+    T: Fn(T1, T2) -> R + Clone + 'static,
     T1: From<FasValue> + GetAstTypeTrait + 'static,
     T2: From<FasValue> + GetAstTypeTrait + 'static,
     R: Into<FasValue> + GetAstTypeTrait + 'static,
@@ -71,6 +77,11 @@ where
         let s = T2::from(args[1].clone());
         let r = (self.0)(f, s);
         r.into()
+    }
+
+    fn clone(&self) -> Box<dyn FasCallable + 'static> {
+        let copy = Self(self.0.clone(), PhantomData);
+        Box::new(copy)
     }
 
     fn to_fas_value(self, func_name: String) -> FasValue {
@@ -88,7 +99,7 @@ where
 
 impl<T, T1, T2, R> FasToWrapper<(T1, T2, R)> for T
 where
-    T: Fn(T1, T2) -> R + 'static,
+    T: Fn(T1, T2) -> R + Clone + 'static,
     T1: From<FasValue> + GetAstTypeTrait + 'static,
     T2: From<FasValue> + GetAstTypeTrait + 'static,
     R: Into<FasValue> + GetAstTypeTrait + 'static,

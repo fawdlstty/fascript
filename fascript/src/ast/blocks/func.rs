@@ -61,7 +61,12 @@ pub struct AstNativeFunc {
 
 impl Clone for AstNativeFunc {
     fn clone(&self) -> Self {
-        todo!()
+        Self {
+            ret_type: self.ret_type.clone(),
+            name: self.name.clone(),
+            arg_types: self.arg_types.clone(),
+            func_impl: self.func_impl.clone(),
+        }
     }
 }
 
