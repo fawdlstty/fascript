@@ -21,7 +21,7 @@ impl AstIfStmt {
         for root_item in root.into_inner() {
             match root_item.as_rule() {
                 Rule::MiddleExpr => condition_expr = AstExpr::parse_middle_expr(root_item),
-                Rule::Stmt => stmts.push(AstStmt::parse(root_item)),
+                Rule::Stmts => stmts = AstStmt::parse_stmts(root_item),
                 _ => unreachable!(),
             }
         }
@@ -32,7 +32,7 @@ impl AstIfStmt {
         let mut stmts = vec![];
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::Stmt => stmts.push(AstStmt::parse(root_item)),
+                Rule::Stmts => stmts = AstStmt::parse_stmts(root_item),
                 _ => unreachable!(),
             }
         }

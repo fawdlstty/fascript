@@ -25,7 +25,7 @@ impl ParseExt for AstDoWhileStmt {
             match root_item.as_rule() {
                 Rule::LoopLabel => do_while_stmt.label = root_item.as_str().to_string(),
                 Rule::MiddleExpr => do_while_stmt.cond_expr = AstExpr::parse_middle_expr(root_item),
-                Rule::Stmt => do_while_stmt.stmts.push(AstStmt::parse(root_item)),
+                Rule::Stmts => do_while_stmt.stmts = AstStmt::parse_stmts(root_item),
                 _ => unreachable!(),
             }
         }

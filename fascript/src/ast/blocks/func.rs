@@ -1,9 +1,11 @@
-use crate::ast::exprs::value_expr::FasValue;
 use crate::ast::stmts::AstStmt;
-use crate::ast::types::{func_type::AstFuncType, AstType};
-use crate::{ast::*, FasCallable};
+use crate::ast::types::func_type::AstFuncType;
+use crate::ast::types::AstType;
+use crate::ast::ParseExt;
+use crate::ast::PestApiExt;
+use crate::ast::Rule;
+use crate::FasCallable;
 use std::fmt::Debug;
-use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub enum AstFunc {
@@ -103,11 +105,8 @@ impl ParseExt for AstManagedFunc {
                 Rule::Type => _func.ret_type = AstType::parse(root_item),
                 Rule::Id => _func.name = root_item.get_id(),
                 Rule::ArgPairs => (_func.arg_types, _func.arg_names) = root_item.get_arg_pairs(),
-                Rule::FuncBody => _func.body_stmts = AstStmt::parse_func_body(root_item),
-                _ => {
-                    println!("{:?}", root_item.as_rule());
-                    unreachable!();
-                }
+                Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
+                _ => unreachable!(),
             }
         }
         _func

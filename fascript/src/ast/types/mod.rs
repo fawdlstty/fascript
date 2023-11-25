@@ -31,7 +31,7 @@ impl AstType {
 
     pub fn parse_str(type_name: String) -> AstType {
         match &type_name[..] {
-            "bool" => AstType::Dynamic,
+            "bool" => AstType::Bool,
             "dynamic" => AstType::Dynamic,
             "float" => AstType::Float,
             "int" => AstType::Int,

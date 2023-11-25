@@ -1,4 +1,5 @@
 pub mod ast;
+pub mod built_in;
 pub mod exec;
 pub mod utils;
 
@@ -6,8 +7,6 @@ use crate::ast::exprs::value_expr::FasValue;
 use ast::blocks::program::AstProgram;
 use ast::FromStringExt;
 use exec::task_runner::TaskRunner;
-use lazy_static::lazy_static;
-use std::sync::Mutex;
 use utils::native_func_utils::{FasCallable, FasToWrapper};
 
 pub struct FasRuntime {
@@ -40,8 +39,8 @@ impl FasRuntime {
         self.runner.set_global_value(func_name, func)
     }
 
-    pub fn set_func<T: FasToWrapper<U>, U>(&mut self, func_name: String, f: T) {
-        self.set_func_impl(func_name, f.convert());
+    pub fn set_func<T: FasToWrapper<U>, U>(&mut self, func_name: impl Into<String>, f: T) {
+        self.set_func_impl(func_name.into(), f.convert());
     }
 }
 

@@ -32,10 +32,11 @@ pub enum AstStmt {
 }
 
 impl AstStmt {
-    pub fn parse_func_body(root: pest::iterators::Pair<'_, Rule>) -> Vec<AstStmt> {
+    pub fn parse_stmts(root: pest::iterators::Pair<'_, Rule>) -> Vec<AstStmt> {
         let mut stmts = vec![];
         for root_item in root.into_inner() {
             match root_item.as_rule() {
+                Rule::Stmts => return Self::parse_stmts(root_item),
                 Rule::Stmt => stmts.push(AstStmt::parse(root_item)),
                 _ => unreachable!(),
             }

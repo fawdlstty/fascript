@@ -132,13 +132,10 @@ impl AstExpr {
                 Rule::BaseExprSuffixArrayAccess => unreachable!(),
                 Rule::BaseExprSuffixAccess => {
                     if let AstExpr::Temp(temp) = &expr {
-                        if let None = temp.otype {
-                            let _type = AstType::parse_str(temp.name.clone());
-                            expr = AstTempExpr::new(Some(_type), suffix_ctx.get_id());
-                            continue;
-                        }
+                        expr = AstTempExpr::new(format!("{}.{}", temp.name, suffix_ctx.get_id()));
+                    } else {
+                        expr = AstOp1Expr::new(expr, suffix_ctx.get_id(), false);
                     }
-                    expr = AstOp1Expr::new(expr, suffix_ctx.get_id(), false);
                 }
                 _ => unreachable!(),
             }
@@ -154,7 +151,7 @@ impl AstExpr {
             Rule::LambdaExpr => unreachable!(),
             Rule::TupleExpr => unreachable!(),
             Rule::QuotExpr => unreachable!(),
-            Rule::Id => AstTempExpr::new(None, root_item.get_id()),
+            Rule::Id => AstTempExpr::new(root_item.get_id()),
             Rule::ArrayExpr => unreachable!(),
             _ => unreachable!(),
         }
@@ -234,7 +231,7 @@ impl ParseExt for AstExpr {
         let mut middle_expr = None;
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::NameExpr => name_exprs.push(AstTempExpr::new(None, root_item.get_id())),
+                Rule::NameExpr => name_exprs.push(AstTempExpr::new(root_item.get_id())),
                 Rule::AssignOp => assign_ops.push(root_item.as_str().to_string()),
                 Rule::MiddleExpr => middle_expr = Some(Self::parse_middle_expr(root_item)),
                 _ => unreachable!(),

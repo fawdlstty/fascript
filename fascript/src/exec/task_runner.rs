@@ -1,4 +1,3 @@
-use super::native_exprs::NativeExprs;
 use super::op2_calc::Op2Calc;
 use crate::ast::blocks::func::AstFunc;
 use crate::ast::exprs::invoke_expr::AstInvokeExpr;
@@ -7,6 +6,7 @@ use crate::ast::exprs::value_expr::FasValue;
 use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
 use crate::ast::types::AstType;
+use crate::built_in::BuiltIn;
 use crate::utils::oper_utils::OperUtils;
 use std::collections::HashMap;
 
@@ -36,24 +36,6 @@ pub enum LoopControl {
     Break(String),
 }
 
-#[derive(Clone, Debug)]
-pub struct VariableItem {
-    pub var_type: AstType,
-    pub var_value: FasValue,
-}
-
-impl VariableItem {
-    pub fn new(var_type: AstType, var_value: FasValue) -> VariableItem {
-        if var_value.get_type() != var_type {
-            todo!()
-        }
-        VariableItem {
-            var_type,
-            var_value,
-        }
-    }
-}
-
 #[derive(Eq, PartialEq, Debug)]
 pub enum VariablesType {
     IndentVariables,
@@ -62,7 +44,7 @@ pub enum VariablesType {
 
 #[derive(Debug)]
 pub struct Variables {
-    vars: HashMap<String, VariableItem>,
+    vars: HashMap<String, FasValue>,
     vtype: VariablesType,
 }
 
@@ -89,6 +71,10 @@ impl TaskRunner {
             loop_ctrl: LoopControl::None,
         };
         ret.add_level();
+        for name in BuiltIn::init_modules() {
+            let value = BuiltIn::get_module(name);
+            ret.add_var(name.to_string(), value);
+        }
         ret
     }
 
@@ -106,8 +92,7 @@ impl TaskRunner {
                     let var_value = self.eval_expr(def_item.init_value.clone());
                     self.add_var(
                         def_item.var_name.clone(),
-                        def_item.var_type.clone(),
-                        var_value,
+                        var_value.as_type(def_item.var_type.clone()),
                     )
                 }
             }
@@ -141,7 +126,7 @@ impl TaskRunner {
                     //
                     for i in left..right {
                         self.add_level();
-                        self.add_var(for_stmt.iter_name.clone(), AstType::Int, FasValue::Int(i));
+                        self.add_var(for_stmt.iter_name.clone(), FasValue::Int(i));
                         self.eval_stmts(for_stmt.stmts.clone());
                         process_loop_ctrl!(self, for_stmt);
                         self.sub_level();
@@ -192,15 +177,9 @@ impl TaskRunner {
             AstExpr::Op1(_) => todo!(),
             AstExpr::Op2(op2_expr) => self.eval_op2_expr(&op2_expr),
             AstExpr::Switch(_) => todo!(),
-            AstExpr::Temp(temp_expr) => match temp_expr.otype {
-                Some(base_type) => todo!(),
-                None => match self.find_var(&temp_expr.name) {
-                    Some(var_item) => var_item.var_value,
-                    None => {
-                        println!("{}", temp_expr.name);
-                        todo!()
-                    }
-                },
+            AstExpr::Temp(temp_expr) => match self.find_var(&temp_expr.name) {
+                Some(var_item) => var_item,
+                None => todo!(),
             },
             AstExpr::TypeWrap(_) => todo!(),
             AstExpr::Value(val) => val,
@@ -208,24 +187,9 @@ impl TaskRunner {
     }
 
     fn eval_func_expr(&mut self, invoke_expr: &AstInvokeExpr) -> FasValue {
-        match *invoke_expr.func.clone() {
-            AstExpr::Temp(_temp) => match _temp.otype {
-                Some(_type) => {
-                    //_type _temp.name
-                    todo!()
-                }
-                None => {
-                    let _expr = match self.find_var(&_temp.name) {
-                        Some(_var) => _var.var_value.clone(),
-                        None => NativeExprs::get_expr(&_temp.name),
-                    };
-                    if let FasValue::Func(_func_expr) = _expr {
-                        self.invoke_func(*_func_expr.func, invoke_expr.arguments.clone())
-                    } else {
-                        todo!();
-                    }
-                }
-            },
+        let func = self.eval_expr(*invoke_expr.func.clone());
+        match func {
+            FasValue::Func(func) => self.invoke_func(*func.func, invoke_expr.arguments.clone()),
             _ => todo!(),
         }
     }
@@ -239,15 +203,9 @@ impl TaskRunner {
                     AstExpr::Temp(left_expr) => left_expr,
                     _ => todo!(),
                 };
-                match left_expr.otype {
-                    Some(_) => todo!(),
-                    None => {
-                        let var_item = self.find_var(&left_expr.name).unwrap();
-                        let mut value = self.eval_expr(*invoke_expr.right.clone());
-                        self.set_var_value(&left_expr.name, value);
-                        FasValue::None
-                    }
-                }
+                let value = self.eval_expr(*invoke_expr.right.clone());
+                self.set_var_value(&left_expr.name, value);
+                FasValue::None
             } else {
                 let tmp_op2 = AstOp2Expr::new(
                     *invoke_expr.left.clone(),
@@ -313,10 +271,8 @@ impl TaskRunner {
         for (idx, var_name) in func.get_arg_names().iter().enumerate() {
             variables.vars.insert(
                 var_name.clone(),
-                VariableItem {
-                    var_type: arg_types[idx].clone(),
-                    var_value: self.eval_expr(args[idx].clone()),
-                },
+                self.eval_expr(args[idx].clone())
+                    .as_type(arg_types[idx].clone()),
             );
         }
         self.variabless.push(variables);
@@ -333,32 +289,22 @@ impl TaskRunner {
         }
     }
 
-    fn add_var(&mut self, var_name: String, var_type: AstType, var_value: FasValue) {
+    fn add_var(&mut self, var_name: String, mut var_value: FasValue) {
         let bindings = self.variabless.last_mut().unwrap();
         let vars = &mut bindings.vars;
         match vars.get_mut(&var_name) {
-            Some(var) => {
-                var.var_type = var_type;
-                var.var_value = var_value;
-            }
+            Some(var) => std::mem::swap(var, &mut var_value),
             None => {
-                vars.insert(
-                    var_name,
-                    VariableItem {
-                        var_type,
-                        var_value,
-                    },
-                );
-                ()
+                vars.insert(var_name, var_value);
             }
-        }
+        };
     }
 
-    fn set_var_value(&mut self, var_name: &str, var_value: FasValue) {
+    fn set_var_value(&mut self, var_name: &str, mut var_value: FasValue) {
         // find var in func
         for variables in self.variabless.iter_mut().rev() {
             if let Some(item) = variables.vars.get_mut(var_name) {
-                item.var_value = var_value;
+                std::mem::swap(item, &mut var_value);
                 return;
             }
             if variables.vtype == VariablesType::InvokeArguments {
@@ -368,40 +314,55 @@ impl TaskRunner {
 
         // find var in global
         if let Some(item) = self.variabless[0].vars.get_mut(var_name) {
-            item.var_value = var_value;
+            std::mem::swap(item, &mut var_value);
             return;
         }
         unreachable!()
     }
 
-    fn find_var(&mut self, var_name: &str) -> Option<VariableItem> {
+    fn find_var(&mut self, var_name: &str) -> Option<FasValue> {
         // find var in func
+        let mut vars: Vec<&str> = var_name.split('.').collect();
+        let var_name = vars[0];
+        vars.remove(0);
+        let mut current_value = None;
         for variables in self.variabless.iter().rev() {
             if let Some(item) = variables.vars.get(var_name) {
-                return Some(item.clone());
-            }
-            if variables.vtype == VariablesType::InvokeArguments {
+                current_value = Some(item.clone());
                 break;
             }
+            if variables.vtype == VariablesType::InvokeArguments {
+                // find var in global
+                if let Some(item) = self.variabless[0].vars.get(var_name) {
+                    current_value = Some(item.clone());
+                    break;
+                }
+            }
+        }
+        while vars.len() > 0 {
+            if current_value.is_none() {
+                return None;
+            }
+            let name = vars.remove(0);
+            current_value = match current_value {
+                Some(FasValue::SMap(sm)) => match sm.get(name) {
+                    Some(value) => Some(value.clone()),
+                    None => return None,
+                },
+                _ => return None,
+            };
         }
 
-        // find var in global
-        if let Some(item) = self.variabless[0].vars.get(var_name) {
-            return Some(item.clone());
-        }
-        return None;
+        current_value
     }
 
-    pub fn set_global_value(&mut self, name: String, value: FasValue) {
+    pub fn set_global_value(&mut self, name: String, mut value: FasValue) {
         match self.variabless[0].vars.get_mut(&name) {
             Some(var_item) => {
-                var_item.var_type = value.get_type();
-                var_item.var_value = value;
+                std::mem::swap(var_item, &mut value);
             }
             None => {
-                self.variabless[0]
-                    .vars
-                    .insert(name, VariableItem::new(value.get_type(), value));
+                self.variabless[0].vars.insert(name, value);
                 ()
             }
         }

@@ -1,5 +1,7 @@
 use super::func_expr::AstFuncExpr;
-use crate::ast::types::{array_type::AstArrayType, map_type::AstMapType, AstType};
+use crate::ast::types::array_type::AstArrayType;
+use crate::ast::types::map_type::AstMapType;
+use crate::ast::types::AstType;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
@@ -90,8 +92,6 @@ impl FasValue {
         }
     }
 
-    pub fn as_void(&self) {}
-
     pub fn as_bool(&self) -> bool {
         match self {
             FasValue::Bool(b) => b.clone(),
@@ -180,30 +180,42 @@ macro_rules! define_cast {
     };
 }
 
-macro_rules! define_cast2 {
-    ($type:ty, $v2t:tt, $t2v:tt) => {
-        impl From<FasValue> for $type {
-            fn from(v: FasValue) -> $type {
-                v.$v2t()
-            }
-        }
-
-        impl From<$type> for FasValue {
-            fn from(_: $type) -> FasValue {
-                FasValue::$t2v
-            }
-        }
-
-        impl GetAstTypeTrait for $type {
-            fn get_ast_type() -> AstType {
-                AstType::$t2v
-            }
-        }
-    };
-}
-
-define_cast2!((), as_void, None);
+//define_cast2!((), as_void, None);
 define_cast!(bool, as_bool, Bool);
 define_cast!(f64, as_float, Float);
 define_cast!(i64, as_int, Int);
 define_cast!(String, as_str, String);
+
+// void
+
+impl From<FasValue> for () {
+    fn from(_: FasValue) -> () {
+        ()
+    }
+}
+
+impl From<()> for FasValue {
+    fn from(_: ()) -> FasValue {
+        FasValue::None
+    }
+}
+
+impl GetAstTypeTrait for () {
+    fn get_ast_type() -> AstType {
+        AstType::None
+    }
+}
+
+// &str
+
+impl From<&str> for FasValue {
+    fn from(s: &str) -> FasValue {
+        FasValue::String(s.into())
+    }
+}
+
+impl GetAstTypeTrait for &str {
+    fn get_ast_type() -> AstType {
+        AstType::String
+    }
+}

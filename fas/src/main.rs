@@ -3,20 +3,16 @@ use fascript::FasRuntime;
 #[tokio::main]
 async fn main() {
     let code_str = r#"
-    // void main() {
-    //     int n = 0
-    //     while true {
-    //         n += 1
-    //         if n == 4 {
-    //             break
-    //         }
-    //         println("hello world")
-    //     }
-    // }
-    // main()
-    my_println("hello world")
+    void main() {
+        os.println("hello world")
+        //os.println = (string s) => os.print(s)
+        //os.println("hello")
+        //os.println("hello")
+        //os.println("hello")
+    }
+    main()
     "#;
     let mut runtime = FasRuntime::new();
-    runtime.set_func("my_println".into(), |value: String| println!("{}", value));
+    //runtime.set_func("my_println", |value: String| println!("{}", value));
     _ = runtime.run(code_str).await;
 }

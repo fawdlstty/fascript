@@ -11,10 +11,7 @@ impl ParseExt for AstProgram {
         let mut _program = AstProgram { stmts: vec![] };
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::Stmt => {
-                    let _stmt = AstStmt::parse(root_item);
-                    _program.stmts.push(_stmt);
-                }
+                Rule::Stmts => _program.stmts = AstStmt::parse_stmts(root_item),
                 Rule::EOI => (),
                 _ => unreachable!(),
             }

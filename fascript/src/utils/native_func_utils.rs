@@ -1,6 +1,7 @@
 use crate::ast::blocks::func::{AstFunc, AstNativeFunc};
 use crate::ast::exprs::func_expr::AstFuncExpr;
 use crate::ast::exprs::value_expr::{FasValue, GetAstTypeTrait};
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 pub trait FasCallable {
@@ -108,5 +109,22 @@ where
 
     fn convert(self) -> Self::Output {
         FuncWrapper2(self, PhantomData)
+    }
+}
+
+/////////////////////
+
+pub trait AddFuncExt {
+    fn set_func_impl<T: FasCallable>(&mut self, func_name: String, f: T);
+
+    fn set_func<T: FasToWrapper<U>, U>(&mut self, func_name: impl Into<String>, f: T) {
+        self.set_func_impl(func_name.into(), f.convert())
+    }
+}
+
+impl AddFuncExt for HashMap<String, FasValue> {
+    fn set_func_impl<T: FasCallable>(&mut self, func_name: String, f: T) {
+        let item = f.to_fas_value(func_name.clone());
+        self.insert(func_name, item);
     }
 }

@@ -23,8 +23,8 @@ BoolLiteral   =  { "true" | "false" }
 StringLiteral = @{ "\"" ~ ("\\\"" | (!"\"" ~ ANY))* ~ "\"" }
 Literal       =  { NullLiteral | NumberLiteral | BoolLiteral | StringLiteral }
 
-Id = @{ CHAR ~ NCHAR* }
-// Ids =  { (Id ~ ".")* ~ Id }
+Id  = @{ CHAR ~ NCHAR* }
+Ids =  { (Id ~ ".")* ~ Id }
 
 MapType     = { "map" ~ (QJIAN_L ~ Type ~ COMMA ~ Type ~ QJIAN_R)? }
 TupleType   = { QYUAN_L ~ (Type ~ COMMA)+ ~ Type ~ QYUAN_R }
@@ -40,7 +40,7 @@ Expr2                     = { BaseExpr }
 IndexExpr                 = { Expr1? ~ ".." ~ Expr2? }
 ArgPair                   = { Type? ~ Id }
 ArgPairs                  = { QYUAN_L ~ ((ArgPair ~ COMMA)? ~ ArgPair)? ~ QYUAN_R }
-FuncBody                  = { ("=>" ~ Stmt) | (QHUA_L ~ Stmt* ~ QHUA_R) }
+FuncBody                  = { ("=>" ~ Expr) | (QHUA_L ~ Stmts ~ QHUA_R) }
 LambdaExpr                = { (Id | ArgPairs) ~ FuncBody }
 NewExpr                   = { QHUA_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QHUA_R }
 TuplePair                 = { Id ~ ":" ~ Expr }
@@ -64,23 +64,24 @@ AssignOp                  = { "=" | "+=" | "-=" | "*=" | "/=" | "**=" | "%=" | "
 Middle2OpExpr             = { StrongExpr ~ (CalcOp ~ StrongExpr)* }
 AwaitExpr                 = { "await" ~ StrongExpr }
 MiddleExpr                = { Middle3OpExpr | Middle2OpExpr | AwaitExpr }
-NameExpr                  = { Id }
+NameExpr                  = { Ids }
 Expr                      = { (NameExpr ~ AssignOp)* ~ MiddleExpr }
 
 LoopLabel      = { Id }
-ForStmt        = { (LoopLabel ~ ":")? ~ "for" ~ Id ~ "in" ~ (IndexExpr | MiddleExpr) ~ QHUA_L ~ Stmt* ~ QHUA_R }
-IfPart         = { "if" ~ MiddleExpr ~ QHUA_L ~ Stmt* ~ QHUA_R }
-IfEndPart      = { QHUA_L ~ Stmt* ~ QHUA_R }
-IfStmt         = { IfPart ~ ("else" ~ IfPart)* ~ ("else" ~ IfEndPart)? ~ LINE }
-BreakStmt      = { "break" ~ Id? ~ LINE }
-ContinueStmt   = { "continue" ~ Id? ~ LINE }
-DoWhileStmt    = { "do" ~ QHUA_L ~ Stmt* ~ QHUA_R ~ "while" ~ MiddleExpr ~ LINE }
-WhileStmt      = { "while" ~ MiddleExpr ~ QHUA_L ~ Stmt* ~ QHUA_R ~ LINE }
+ForStmt        = { (LoopLabel ~ ":")? ~ "for" ~ Id ~ "in" ~ (IndexExpr | MiddleExpr) ~ QHUA_L ~ Stmts ~ QHUA_R }
+IfPart         = { "if" ~ MiddleExpr ~ QHUA_L ~ Stmts ~ QHUA_R }
+IfEndPart      = { QHUA_L ~ Stmts ~ QHUA_R }
+IfStmt         = { IfPart ~ ("else" ~ IfPart)* ~ ("else" ~ IfEndPart)? }
+BreakStmt      = { "break" ~ Id? }
+ContinueStmt   = { "continue" ~ Id? }
+DoWhileStmt    = { "do" ~ QHUA_L ~ Stmts ~ QHUA_R ~ "while" ~ MiddleExpr }
+WhileStmt      = { "while" ~ MiddleExpr ~ QHUA_L ~ Stmts ~ QHUA_R }
 DefVarItemPart = { Id ~ "=" ~ MiddleExpr }
-DefVarStmt     = { (Type | "var") ~ DefVarItemPart ~ ("," ~ DefVarItemPart)* ~ LINE }
-FuncStmt       = { Type ~ (Type ~ ".")? ~ Id ~ ArgPairs ~ FuncBody ~ LINE }
-ExprStmt       = { Expr ~ LINE }
+DefVarStmt     = { (Type | "var") ~ DefVarItemPart ~ ("," ~ DefVarItemPart)* }
+FuncStmt       = { Type ~ (Type ~ ".")? ~ Id ~ ArgPairs ~ FuncBody }
+ExprStmt       = { Expr }
 Stmt           = { ForStmt | IfStmt | BreakStmt | ContinueStmt | DoWhileStmt | WhileStmt | DefVarStmt | FuncStmt | ExprStmt }
+Stmts          = { LINE? ~ (Stmt ~ LINE)* ~ Stmt? ~ LINE? }
 
 // FuncBlock   = { "func" ~ ("Object" ~ ".")? ~ Id ~ ArgPairs? ~ FuncBody ~ LINE }
-ProgramFile = { SOI ~ LINE? ~ Stmt* ~ EOI }
+ProgramFile = { SOI ~ LINE? ~ Stmts ~ EOI }
