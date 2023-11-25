@@ -13,6 +13,6 @@ async fn main() {
     main()
     "#;
     let mut runtime = FasRuntime::new();
-    //runtime.set_func("my_println", |value: String| println!("{}", value));
+    runtime.set_func("my_println", |value: String| println!("{}", value));
     _ = runtime.run(code_str).await;
 }
