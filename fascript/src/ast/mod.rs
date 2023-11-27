@@ -24,6 +24,7 @@ impl PestApiExt for pest::iterators::Pair<'_, Rule> {
     fn get_id(self) -> String {
         match self.as_rule() {
             Rule::Id => self.as_str().to_string(),
+            Rule::Ids => self.as_str().to_string(),
             _ => self.into_inner().next().unwrap().get_id(),
         }
     }

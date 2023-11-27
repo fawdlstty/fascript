@@ -16,6 +16,7 @@ use self::temp_expr::AstTempExpr;
 use self::type_wrap_expr::AstTypeWrapExpr;
 use self::value_expr::FasValue;
 use self::{func_expr::AstFuncExpr, index_expr::AstIndexExpr};
+use super::blocks::func::AstFunc;
 use super::{types::AstType, ParseExt, PestApiExt, Rule};
 use crate::utils::{oper_utils::OperUtils, str_utils::StrUtils};
 
@@ -148,7 +149,7 @@ impl AstExpr {
         match root_item.as_rule() {
             Rule::Literal => Self::parse_literal_expr(root_item),
             Rule::NewExpr => unreachable!(),
-            Rule::LambdaExpr => unreachable!(),
+            Rule::LambdaExpr => AstExpr::Func(AstFuncExpr::new(AstFunc::parse_lambda(root_item))),
             Rule::TupleExpr => unreachable!(),
             Rule::QuotExpr => unreachable!(),
             Rule::Id => AstTempExpr::new(root_item.get_id()),

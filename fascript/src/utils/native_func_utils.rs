@@ -116,6 +116,9 @@ FasWrapper!(FuncWrapper3, T0 t0 0, T1 t1 1, T2 t2 2);
 FasWrapper!(FuncWrapper4, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3);
 FasWrapper!(FuncWrapper5, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4);
 FasWrapper!(FuncWrapper6, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5);
+FasWrapper!(FuncWrapper7, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5, T7 t7 7);
+FasWrapper!(FuncWrapper8, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5, T7 t7 7, T8 t8 8);
+FasWrapper!(FuncWrapper9, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5, T7 t7 7, T8 t8 8, T9 t9 9);
 
 //
 

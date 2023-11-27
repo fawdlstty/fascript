@@ -5,7 +5,6 @@ use crate::ast::exprs::op2_expr::AstOp2Expr;
 use crate::ast::exprs::value_expr::FasValue;
 use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
-use crate::ast::types::AstType;
 use crate::built_in::BuiltIn;
 use crate::utils::oper_utils::OperUtils;
 use std::collections::HashMap;
@@ -25,6 +24,7 @@ macro_rules! process_loop_ctrl {
                 }
                 break;
             }
+            LoopControl::Return => break,
         };
     };
 }
@@ -34,6 +34,7 @@ pub enum LoopControl {
     None,
     Continue(String),
     Break(String),
+    Return,
 }
 
 #[derive(Eq, PartialEq, Debug)]
@@ -73,7 +74,7 @@ impl TaskRunner {
         ret.add_level();
         for name in BuiltIn::init_modules() {
             let value = BuiltIn::get_module(name);
-            ret.add_var(name.to_string(), value);
+            ret.add_new_var(name.to_string(), value);
         }
         ret
     }
@@ -90,7 +91,7 @@ impl TaskRunner {
             AstStmt::DefVar(def_stmt) => {
                 for def_item in def_stmt.def_vars {
                     let var_value = self.eval_expr(def_item.init_value.clone());
-                    self.add_var(
+                    self.add_new_var(
                         def_item.var_name.clone(),
                         var_value.as_type(def_item.var_type.clone()),
                     )
@@ -126,7 +127,7 @@ impl TaskRunner {
                     //
                     for i in left..right {
                         self.add_level();
-                        self.add_var(for_stmt.iter_name.clone(), FasValue::Int(i));
+                        self.add_new_var(for_stmt.iter_name.clone(), FasValue::Int(i));
                         self.eval_stmts(for_stmt.stmts.clone());
                         process_loop_ctrl!(self, for_stmt);
                         self.sub_level();
@@ -147,6 +148,10 @@ impl TaskRunner {
                 if !is_cond && if_stmt.stmtss.len() > if_stmt.con_exprs.len() {
                     self.eval_stmts(if_stmt.stmtss.last().unwrap().clone());
                 }
+            }
+            AstStmt::Return(expr) => {
+                self.ret_value = Some(self.eval_expr(expr));
+                self.loop_ctrl = LoopControl::Return;
             }
             AstStmt::While(while_stmt) => loop {
                 let cond_expr = self.eval_expr(while_stmt.cond_expr.clone()).as_bool();
@@ -178,7 +183,7 @@ impl TaskRunner {
             AstExpr::Op2(op2_expr) => self.eval_op2_expr(&op2_expr),
             AstExpr::Switch(_) => todo!(),
             AstExpr::Temp(temp_expr) => match self.find_var(&temp_expr.name) {
-                Some(var_item) => var_item,
+                Some(var_item) => var_item.clone(),
                 None => todo!(),
             },
             AstExpr::TypeWrap(_) => todo!(),
@@ -187,41 +192,46 @@ impl TaskRunner {
     }
 
     fn eval_func_expr(&mut self, invoke_expr: &AstInvokeExpr) -> FasValue {
-        let func = self.eval_expr(*invoke_expr.func.clone());
+        let func: FasValue = self.eval_expr(*invoke_expr.func.clone());
         match func {
             FasValue::Func(func) => self.invoke_func(*func.func, invoke_expr.arguments.clone()),
-            _ => todo!(),
+            _ => {
+                println!("{:?}", func);
+                todo!()
+            }
         }
     }
 
-    fn eval_op2_expr(&mut self, invoke_expr: &AstOp2Expr) -> FasValue {
-        let op = &invoke_expr.op[..];
+    fn eval_op2_expr(&mut self, op2_expr: &AstOp2Expr) -> FasValue {
+        let op = &op2_expr.op[..];
         if OperUtils::is_assign_op2(op) {
             if op == "=" {
-                let left_expr = *invoke_expr.left.clone();
-                let left_expr = match left_expr {
-                    AstExpr::Temp(left_expr) => left_expr,
-                    _ => todo!(),
+                let left_name = match &*op2_expr.left {
+                    AstExpr::Temp(temp_expr) => temp_expr.name.clone(),
+                    _ => unreachable!(),
                 };
-                let value = self.eval_expr(*invoke_expr.right.clone());
-                self.set_var_value(&left_expr.name, value);
+                let mut value = self.eval_expr(*op2_expr.right.clone());
+                match self.find_var(&left_name) {
+                    Some(value_ref) => std::mem::swap(&mut value, value_ref),
+                    None => todo!(),
+                };
                 FasValue::None
             } else {
                 let tmp_op2 = AstOp2Expr::new(
-                    *invoke_expr.left.clone(),
+                    *op2_expr.left.clone(),
                     op[..(op.len() - 1)].to_string(),
-                    *invoke_expr.right.clone(),
+                    *op2_expr.right.clone(),
                 );
                 let tmp_op2 = AstOp2Expr::new(
-                    *invoke_expr.left.clone(),
+                    *op2_expr.left.clone(),
                     "=".to_string(),
                     AstExpr::Value(self.eval_expr(tmp_op2)),
                 );
                 self.eval_expr(tmp_op2)
             }
         } else if OperUtils::is_calc_op2(op) {
-            let left_expr = self.eval_expr(*invoke_expr.left.clone());
-            let right_expr = self.eval_expr(*invoke_expr.right.clone());
+            let left_expr = self.eval_expr(*op2_expr.left.clone());
+            let right_expr = self.eval_expr(*op2_expr.right.clone());
             Op2Calc::calc(left_expr, op, right_expr)
         } else {
             todo!()
@@ -289,7 +299,7 @@ impl TaskRunner {
         }
     }
 
-    fn add_var(&mut self, var_name: String, mut var_value: FasValue) {
+    fn add_new_var(&mut self, var_name: String, mut var_value: FasValue) {
         let bindings = self.variabless.last_mut().unwrap();
         let vars = &mut bindings.vars;
         match vars.get_mut(&var_name) {
@@ -300,60 +310,50 @@ impl TaskRunner {
         };
     }
 
-    fn set_var_value(&mut self, var_name: &str, mut var_value: FasValue) {
-        // find var in func
-        for variables in self.variabless.iter_mut().rev() {
-            if let Some(item) = variables.vars.get_mut(var_name) {
-                std::mem::swap(item, &mut var_value);
-                return;
-            }
-            if variables.vtype == VariablesType::InvokeArguments {
-                break;
-            }
-        }
-
-        // find var in global
-        if let Some(item) = self.variabless[0].vars.get_mut(var_name) {
-            std::mem::swap(item, &mut var_value);
-            return;
-        }
-        unreachable!()
-    }
-
-    fn find_var(&mut self, var_name: &str) -> Option<FasValue> {
+    fn find_var(&mut self, var_name: &str) -> Option<&mut FasValue> {
         // find var in func
         let mut vars: Vec<&str> = var_name.split('.').collect();
         let var_name = vars[0];
         vars.remove(0);
         let mut current_value = None;
-        for variables in self.variabless.iter().rev() {
-            if let Some(item) = variables.vars.get(var_name) {
-                current_value = Some(item.clone());
-                break;
+        let mut in_func = true;
+        let vars_len = self.variabless.len();
+        for (index, variables) in self.variabless.iter_mut().rev().enumerate() {
+            if !in_func && index != vars_len - 1 {
+                continue;
             }
-            if variables.vtype == VariablesType::InvokeArguments {
-                // find var in global
-                if let Some(item) = self.variabless[0].vars.get(var_name) {
-                    current_value = Some(item.clone());
+            if index == vars_len - 1 {
+                if !variables.vars.contains_key(var_name) {
+                    let new_obj = match vars.is_empty() {
+                        true => FasValue::None,
+                        false => FasValue::SMap(HashMap::new()),
+                    };
+                    variables.vars.insert(var_name.to_string(), new_obj);
+                }
+                current_value = variables.vars.get_mut(var_name);
+            } else {
+                if let Some(item) = variables.vars.get_mut(var_name) {
+                    current_value = Some(item);
                     break;
+                }
+                if variables.vtype == VariablesType::InvokeArguments {
+                    in_func = false;
                 }
             }
         }
+        let mut current_value = current_value.unwrap();
         while vars.len() > 0 {
-            if current_value.is_none() {
-                return None;
-            }
             let name = vars.remove(0);
             current_value = match current_value {
-                Some(FasValue::SMap(sm)) => match sm.get(name) {
-                    Some(value) => Some(value.clone()),
-                    None => return None,
+                FasValue::SMap(sm) => match sm.get_mut(name) {
+                    Some(value) => value,
+                    None => unreachable!(),
                 },
-                _ => return None,
+                _ => unreachable!(),
             };
         }
 
-        current_value
+        Some(current_value)
     }
 
     pub fn set_global_value(&mut self, name: String, mut value: FasValue) {

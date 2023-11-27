@@ -5,10 +5,10 @@ async fn main() {
     let code_str = r#"
     void main() {
         os.println("hello world")
-        //os.println = (string s) => os.print(s)
-        //os.println("hello")
-        //os.println("hello")
-        //os.println("hello")
+        os.println = (string s) => os.print(s)
+        os.println("hello")
+        os.println("hello")
+        os.println("hello")
     }
     main()
     "#;

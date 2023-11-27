@@ -27,7 +27,7 @@ impl PartialEq for FasValue {
             (Self::Array(l0), Self::Array(r0)) => l0 == r0,
             (Self::IMap(l0), Self::IMap(r0)) => l0 == r0,
             (Self::SMap(l0), Self::SMap(r0)) => l0 == r0,
-            (Self::Func(l0), Self::Func(r0)) => todo!(), //*l0.func == *r0.func,
+            (Self::Func(_l0), Self::Func(_r0)) => false, //*l0.func == *r0.func,
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
@@ -78,9 +78,24 @@ impl FasValue {
             FasValue::Int(n) => format!("{}", n),
             FasValue::Float(f) => format!("{:.4}", f),
             FasValue::String(s) => s.to_string(),
-            FasValue::Array(v) => todo!(),
-            FasValue::IMap(im) => todo!(),
-            FasValue::SMap(sm) => todo!(),
+            FasValue::Array(v) => {
+                let items: Vec<String> = v.iter().map(|x| x.as_str()).collect();
+                format!("[ {} ]", items.join(", "))
+            }
+            FasValue::IMap(im) => {
+                let items: Vec<String> = im
+                    .iter()
+                    .map(|x| format!("{}: {}", x.0, x.1.as_str()))
+                    .collect();
+                format!("{{ {} }}", items.join(", "))
+            }
+            FasValue::SMap(sm) => {
+                let items: Vec<String> = sm
+                    .iter()
+                    .map(|x| format!("{}: {}", x.0, x.1.as_str()))
+                    .collect();
+                format!("{{ {} }}", items.join(", "))
+            }
             FasValue::Func(_) => "(func)".to_string(),
         }
     }

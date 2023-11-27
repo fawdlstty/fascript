@@ -45,6 +45,10 @@ impl AstFunc {
     pub fn get_type(&self) -> AstType {
         AstFuncType::new(self.get_arg_types(), self.get_ret_type())
     }
+
+    pub fn parse_lambda(root: pest::iterators::Pair<'_, Rule>) -> Self {
+        AstFunc::AstManagedFunc(AstManagedFunc::parse_lambda(root))
+    }
 }
 
 impl ParseExt for AstFunc {
@@ -89,6 +93,30 @@ pub struct AstManagedFunc {
     pub arg_types: Vec<AstType>,
     pub arg_names: Vec<String>,
     pub body_stmts: Vec<AstStmt>,
+}
+
+impl AstManagedFunc {
+    fn parse_lambda(root: pest::iterators::Pair<'_, Rule>) -> Self {
+        let mut _func = AstManagedFunc {
+            ret_type: AstType::new(),
+            name: "".to_string(),
+            arg_types: vec![],
+            arg_names: vec![],
+            body_stmts: vec![],
+        };
+        for root_item in root.into_inner() {
+            match root_item.as_rule() {
+                Rule::Id => {
+                    _func.arg_types.push(AstType::Dynamic);
+                    _func.arg_names.push(root_item.get_id());
+                }
+                Rule::ArgPairs => (_func.arg_types, _func.arg_names) = root_item.get_arg_pairs(),
+                Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
+                _ => unreachable!(),
+            }
+        }
+        _func
+    }
 }
 
 impl ParseExt for AstManagedFunc {
