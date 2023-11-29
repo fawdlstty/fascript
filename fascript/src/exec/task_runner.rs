@@ -1,5 +1,5 @@
 use super::op2_calc::Op2Calc;
-use crate::ast::blocks::func::AstFunc;
+use crate::ast::blocks::func::{AstFunc, AstManagedFunc};
 use crate::ast::exprs::invoke_expr::AstInvokeExpr;
 use crate::ast::exprs::op2_expr::AstOp2Expr;
 use crate::ast::exprs::value_expr::FasValue;
@@ -29,7 +29,7 @@ macro_rules! process_loop_ctrl {
     };
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum LoopControl {
     None,
     Continue(String),
@@ -170,6 +170,9 @@ impl TaskRunner {
     pub fn eval_stmts(&mut self, stmts: Vec<AstStmt>) {
         for stmt in stmts {
             self.eval_stmt(stmt);
+            if self.ret_value.is_some() {
+                break;
+            }
         }
     }
 
@@ -195,10 +198,7 @@ impl TaskRunner {
         let func: FasValue = self.eval_expr(*invoke_expr.func.clone());
         match func {
             FasValue::Func(func) => self.invoke_func(*func.func, invoke_expr.arguments.clone()),
-            _ => {
-                println!("{:?}", func);
-                todo!()
-            }
+            _ => todo!(),
         }
     }
 
@@ -239,7 +239,6 @@ impl TaskRunner {
     }
 
     pub fn invoke_func(&mut self, func: AstFunc, args: Vec<AstExpr>) -> FasValue {
-        self.add_level_invoke(&func, &args);
         let mut ret = FasValue::None;
         match func {
             AstFunc::AstNativeFunc(func) => {
@@ -248,18 +247,19 @@ impl TaskRunner {
                     .call(args.into_iter().map(|x| self.eval_expr(x)).collect());
             }
             AstFunc::AstManagedFunc(func) => {
-                for stmt in func.body_stmts {
-                    self.eval_stmt(stmt);
-                    if self.ret_value.is_some() {
-                        let mut ret_value = None;
-                        std::mem::swap(&mut ret_value, &mut self.ret_value);
-                        ret = ret_value.unwrap();
-                        break;
-                    }
+                let loop_ctrl = self.loop_ctrl.clone();
+                self.loop_ctrl = LoopControl::None;
+                self.add_level_invoke(&func, &args);
+                self.eval_stmts(func.body_stmts.clone());
+                if self.ret_value.is_some() {
+                    let mut ret_value = None;
+                    std::mem::swap(&mut ret_value, &mut self.ret_value);
+                    ret = ret_value.unwrap();
                 }
+                self.sub_level();
+                self.loop_ctrl = loop_ctrl;
             }
         }
-        self.sub_level();
         ret
     }
 
@@ -274,16 +274,14 @@ impl TaskRunner {
             .push(Variables::new(VariablesType::IndentVariables));
     }
 
-    fn add_level_invoke(&mut self, func: &AstFunc, args: &Vec<AstExpr>) {
-        let args = args;
+    fn add_level_invoke(&mut self, func: &AstManagedFunc, args: &Vec<AstExpr>) {
         let mut variables = Variables::new(VariablesType::InvokeArguments);
-        let arg_types = func.get_arg_types();
-        for (idx, var_name) in func.get_arg_names().iter().enumerate() {
-            variables.vars.insert(
-                var_name.clone(),
-                self.eval_expr(args[idx].clone())
-                    .as_type(arg_types[idx].clone()),
-            );
+        let arg_types = func.arg_types.clone();
+        for (idx, var_name) in func.arg_names.iter().enumerate() {
+            let value = self
+                .eval_expr(args[idx].clone())
+                .as_type(arg_types[idx].clone());
+            variables.vars.insert(var_name.clone(), value);
         }
         self.variabless.push(variables);
         self.variabless
@@ -345,10 +343,16 @@ impl TaskRunner {
         while vars.len() > 0 {
             let name = vars.remove(0);
             current_value = match current_value {
-                FasValue::SMap(sm) => match sm.get_mut(name) {
-                    Some(value) => value,
-                    None => unreachable!(),
-                },
+                FasValue::SMap(sm) => {
+                    if !sm.contains_key(name) {
+                        let new_obj = match vars.is_empty() {
+                            true => FasValue::None,
+                            false => FasValue::SMap(HashMap::new()),
+                        };
+                        sm.insert(name.to_string(), new_obj);
+                    }
+                    sm.get_mut(name).unwrap()
+                }
                 _ => unreachable!(),
             };
         }

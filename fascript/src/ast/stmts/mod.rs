@@ -39,7 +39,7 @@ impl AstStmt {
             match root_item.as_rule() {
                 Rule::Stmts => return Self::parse_stmts(root_item),
                 Rule::Stmt => stmts.push(AstStmt::parse(root_item)),
-                Rule::Expr => stmts.push(AstStmt::Return(AstExpr::parse(root_item))),
+                Rule::Expr => return vec![AstStmt::Return(AstExpr::parse(root_item))],
                 _ => unreachable!(),
             }
         }
