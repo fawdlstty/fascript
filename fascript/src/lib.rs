@@ -3,6 +3,9 @@ pub mod built_in;
 pub mod exec;
 pub mod utils;
 
+#[cfg(test)]
+mod tests;
+
 use crate::ast::exprs::value_expr::FasValue;
 use ast::blocks::program::AstProgram;
 use ast::FromStringExt;
