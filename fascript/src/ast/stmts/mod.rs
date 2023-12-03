@@ -6,6 +6,8 @@ mod for_stmt;
 mod if_stmt;
 mod while_stmt;
 
+use core::panic;
+
 use self::break_stmt::AstBreakStmt;
 use self::continue_stmt::AstContinueStmt;
 use self::dec_var_stmt::AstDefVarStmt;
@@ -15,6 +17,8 @@ use self::if_stmt::AstIfStmt;
 use self::while_stmt::AstWhileStmt;
 use super::blocks::func::AstFunc;
 use super::exprs::AstExpr;
+use super::Parse2Ext;
+use super::Parse3Ext;
 use super::ParseExt;
 use super::Rule;
 use crate::ast::exprs::func_expr::AstFuncExpr;
@@ -38,8 +42,15 @@ impl AstStmt {
         for root_item in root.into_inner() {
             match root_item.as_rule() {
                 Rule::Stmts => return Self::parse_stmts(root_item),
-                Rule::Stmt => stmts.push(AstStmt::parse(root_item)),
-                Rule::Expr => return vec![AstStmt::Return(AstExpr::parse(root_item))],
+                Rule::Stmt => stmts.extend(AstStmt::parse(root_item)),
+                Rule::Expr => {
+                    let expr = AstExpr::parse(root_item);
+                    if expr.2.len() > 0 {
+                        panic!();
+                    }
+                    stmts.extend(expr.0);
+                    stmts.push(AstStmt::Return(expr.1));
+                }
                 _ => unreachable!(),
             }
         }
@@ -47,19 +58,24 @@ impl AstStmt {
     }
 }
 
-impl ParseExt for AstStmt {
-    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
+impl Parse3Ext for AstStmt {
+    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Vec<AstStmt> {
         match root.into_inner().next() {
             Some(root_item) => match root_item.as_rule() {
-                Rule::BreakStmt => AstStmt::Break(AstBreakStmt::parse(root_item)),
-                Rule::ContinueStmt => AstStmt::Continue(AstContinueStmt::parse(root_item)),
-                Rule::DoWhileStmt => AstStmt::DoWhile(AstDoWhileStmt::parse(root_item)),
-                Rule::WhileStmt => AstStmt::While(AstWhileStmt::parse(root_item)),
-                Rule::DefVarStmt => AstStmt::DefVar(AstDefVarStmt::parse(root_item)),
+                Rule::BreakStmt => vec![AstStmt::Break(AstBreakStmt::parse(root_item))],
+                Rule::ContinueStmt => vec![AstStmt::Continue(AstContinueStmt::parse(root_item))],
+                Rule::DoWhileStmt => AstDoWhileStmt::parse(root_item),
+                Rule::WhileStmt => AstWhileStmt::parse(root_item),
+                Rule::DefVarStmt => AstDefVarStmt::parse(root_item),
                 Rule::ExprStmt => {
-                    AstStmt::Expr(AstExpr::parse(root_item.into_inner().next().unwrap()))
+                    let expr = AstExpr::parse(root_item.into_inner().next().unwrap());
+                    let mut stmts = vec![];
+                    stmts.extend(expr.0);
+                    stmts.push(AstStmt::Expr(expr.1));
+                    stmts.extend(expr.2);
+                    stmts
                 }
-                Rule::ForStmt => AstStmt::For(AstForStmt::parse(root_item)),
+                Rule::ForStmt => AstForStmt::parse(root_item),
                 Rule::FuncStmt => {
                     //return AstStmt::Expr(AstExpr::parse(root_item.into_inner().next().unwrap()))
                     let func = AstFunc::parse(root_item);
@@ -68,9 +84,9 @@ impl ParseExt for AstStmt {
                         func.get_name(),
                         AstExpr::Func(AstFuncExpr::new(func)),
                     );
-                    stmt
+                    vec![stmt]
                 }
-                Rule::IfStmt => AstStmt::If(AstIfStmt::parse(root_item)),
+                Rule::IfStmt => AstIfStmt::parse(root_item),
                 _ => unreachable!(),
             },
             None => unreachable!(),

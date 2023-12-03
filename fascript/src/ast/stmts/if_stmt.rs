@@ -1,5 +1,5 @@
 use super::AstStmt;
-use crate::ast::{exprs::AstExpr, ParseExt, Rule};
+use crate::ast::{exprs::AstExpr, Parse3Ext, ParseExt, Rule};
 
 #[derive(Clone, Debug)]
 pub struct AstIfStmt {
@@ -16,11 +16,19 @@ impl AstIfStmt {
     }
 
     fn parse_if_part(root: pest::iterators::Pair<'_, Rule>) -> (AstExpr, Vec<AstStmt>) {
+        //let mut pre_stmts = vec![];
+        //let mut post_stmts = vec![];
         let mut condition_expr = AstExpr::None;
         let mut stmts = vec![];
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::MiddleExpr => condition_expr = AstExpr::parse_middle_expr(root_item),
+                Rule::MiddleExpr => {
+                    let expr = AstExpr::parse_middle_expr(root_item);
+                    if expr.0.len() + expr.2.len() > 0 {
+                        panic!()
+                    }
+                    condition_expr = expr.1;
+                }
                 Rule::Stmts => stmts = AstStmt::parse_stmts(root_item),
                 _ => unreachable!(),
             }
@@ -40,8 +48,8 @@ impl AstIfStmt {
     }
 }
 
-impl ParseExt for AstIfStmt {
-    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
+impl Parse3Ext for AstIfStmt {
+    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Vec<AstStmt> {
         let mut if_stmt = AstIfStmt::new();
         for root_item in root.into_inner() {
             match root_item.as_rule() {
@@ -57,6 +65,6 @@ impl ParseExt for AstIfStmt {
                 _ => unreachable!(),
             }
         }
-        if_stmt
+        vec![AstStmt::If(if_stmt)]
     }
 }

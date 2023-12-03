@@ -14,4 +14,6 @@ async fn main() {
     let mut runtime = FasRuntime::new();
     //runtime.set_func("my_println", |value: String| println!("{}", value));
     _ = runtime.run(code_str).await;
+    //let _ret = runtime.run(code_str).await;
+    //println!("{:?}", _ret);
 }

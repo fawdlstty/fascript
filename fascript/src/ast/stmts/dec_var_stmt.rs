@@ -1,5 +1,5 @@
 use super::AstStmt;
-use crate::ast::{exprs::AstExpr, types::AstType, ParseExt, Rule};
+use crate::ast::{exprs::AstExpr, types::AstType, Parse3Ext, ParseExt, Rule};
 
 #[derive(Clone, Debug)]
 pub struct DefVarItemPart {
@@ -25,8 +25,10 @@ impl AstDefVarStmt {
     }
 }
 
-impl ParseExt for AstDefVarStmt {
-    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
+impl Parse3Ext for AstDefVarStmt {
+    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Vec<AstStmt> {
+        let mut pre_stmts = vec![];
+        let mut post_stmts = vec![];
         let mut stmt = AstDefVarStmt { def_vars: vec![] };
         let mut var_type = None;
         for root_item in root.into_inner() {
@@ -39,7 +41,10 @@ impl ParseExt for AstDefVarStmt {
                         match def_var_item.as_rule() {
                             Rule::Id => var_name = def_var_item.as_str(),
                             Rule::MiddleExpr => {
-                                init_value = AstExpr::parse_middle_expr(def_var_item)
+                                let expr = AstExpr::parse_middle_expr(def_var_item);
+                                pre_stmts.extend(expr.0);
+                                init_value = expr.1;
+                                post_stmts.extend(expr.2);
                             }
                             _ => unreachable!(),
                         }
@@ -53,6 +58,8 @@ impl ParseExt for AstDefVarStmt {
                 _ => unreachable!(),
             }
         }
-        stmt
+        pre_stmts.push(AstStmt::DefVar(stmt));
+        pre_stmts.extend(post_stmts);
+        pre_stmts
     }
 }

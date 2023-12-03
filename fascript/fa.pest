@@ -48,12 +48,14 @@ TupleExpr                 = { QYUAN_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QYUAN
 QuotExpr                  = { QYUAN_L ~ Expr ~ QYUAN_R }
 ArrayExpr                 = { QFANG_L ~ (IndexExpr | Expr) ~ QFANG_R }
 BaseExpr                  = { Literal | NewExpr | LambdaExpr | TupleExpr | QuotExpr | Id | ArrayExpr }
-BaseExprPrefix            = { "-" | "++" | "--" | "~" | "!" }
+BaseExprPrefix            = { "++" | "--" | "-" | "~" | "!" }
+BaseExprSuffixBase        = { "++" | "--" }
 BaseExprSuffixInvoke      = { QYUAN_L ~ (Expr ~ (COMMA ~ Expr)*)? ~ QYUAN_R }
 BaseExprSuffixArrayAccess = { QFANG_L ~ IndexExpr ~ QFANG_R }
 BaseExprSuffixAccess      = { "." ~ Id }
 BaseExprSuffix            = {
-    BaseExprSuffixInvoke
+    BaseExprSuffixBase
+  | BaseExprSuffixInvoke
   | BaseExprSuffixArrayAccess
   | BaseExprSuffixAccess
 }

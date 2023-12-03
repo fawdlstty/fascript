@@ -1,10 +1,13 @@
 use super::op2_calc::Op2Calc;
-use crate::ast::blocks::func::{AstFunc, AstManagedFunc};
+use crate::ast::blocks::func::AstFunc;
+use crate::ast::blocks::func::AstManagedFunc;
 use crate::ast::exprs::invoke_expr::AstInvokeExpr;
+use crate::ast::exprs::op1_expr::AstOp1Expr;
 use crate::ast::exprs::op2_expr::AstOp2Expr;
 use crate::ast::exprs::value_expr::FasValue;
 use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
+use crate::ast::types::AstType;
 use crate::built_in::BuiltIn;
 use crate::utils::oper_utils::OperUtils;
 use std::collections::HashMap;
@@ -83,6 +86,9 @@ impl TaskRunner {
         if self.loop_ctrl != LoopControl::None {
             return;
         }
+        if self.variabless.len() == 1 {
+            self.ret_value = None;
+        }
         match stmt {
             AstStmt::Break(break_stmt) => self.loop_ctrl = LoopControl::Break(break_stmt.label),
             AstStmt::Continue(continue_stmt) => {
@@ -109,8 +115,10 @@ impl TaskRunner {
                 }
             },
             AstStmt::Expr(expr) => {
-                self.eval_expr(expr);
-                ()
+                let ret = self.eval_expr(expr);
+                if self.variabless.len() == 1 {
+                    self.ret_value = Some(ret);
+                }
             }
             AstStmt::For(for_stmt) => match for_stmt.iter_items {
                 AstExpr::Index(index_expr) => {
@@ -182,7 +190,7 @@ impl TaskRunner {
             AstExpr::Func(func_expr) => FasValue::Func(Box::new(func_expr)),
             AstExpr::Index(_) => unreachable!(),
             AstExpr::Invoke(invoke_expr) => self.eval_func_expr(&invoke_expr),
-            AstExpr::Op1(_) => todo!(),
+            AstExpr::Op1(op1_expr) => self.eval_op1_expr(&op1_expr),
             AstExpr::Op2(op2_expr) => self.eval_op2_expr(&op2_expr),
             AstExpr::Switch(_) => todo!(),
             AstExpr::Temp(temp_expr) => match self.find_var(&temp_expr.name) {
@@ -199,6 +207,34 @@ impl TaskRunner {
         match func {
             FasValue::Func(func) => self.invoke_func(*func.func, invoke_expr.arguments.clone()),
             _ => todo!(),
+        }
+    }
+
+    fn eval_op1_expr(&mut self, op1_expr: &AstOp1Expr) -> FasValue {
+        let left = self.eval_expr(*op1_expr.left.clone());
+        match op1_expr.is_prefix {
+            true => match &op1_expr.op[..] {
+                "-" => match left.get_type() {
+                    AstType::Int => FasValue::Int(-left.as_int()),
+                    AstType::Float => FasValue::Float(-left.as_float()),
+                    _ => panic!(),
+                },
+                "~" => match left.get_type() {
+                    AstType::Int => {
+                        let n = left.as_int();
+                        FasValue::Int(-1 - n)
+                    }
+                    _ => panic!(),
+                },
+                "!" => match left.get_type() {
+                    AstType::Bool => FasValue::Bool(!left.as_bool()),
+                    _ => panic!(),
+                },
+                _ => panic!(),
+            },
+            false => {
+                panic!()
+            }
         }
     }
 

@@ -17,6 +17,8 @@ use self::type_wrap_expr::AstTypeWrapExpr;
 use self::value_expr::FasValue;
 use self::{func_expr::AstFuncExpr, index_expr::AstIndexExpr};
 use super::blocks::func::AstFunc;
+use super::stmts::AstStmt;
+use super::Parse2Ext;
 use super::{types::AstType, ParseExt, PestApiExt, Rule};
 use crate::utils::{oper_utils::OperUtils, str_utils::StrUtils};
 
@@ -35,7 +37,9 @@ pub enum AstExpr {
 }
 
 impl AstExpr {
-    pub fn parse_middle_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
+    pub fn parse_middle_expr(
+        root: pest::iterators::Pair<'_, Rule>,
+    ) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
         let mut expr = None;
         for root_item in root.into_inner() {
             match root_item.as_rule() {
@@ -53,36 +57,52 @@ impl AstExpr {
         expr.unwrap()
     }
 
-    fn parse_op3_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
+    fn parse_op3_expr(root: pest::iterators::Pair<'_, Rule>) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
+        let mut pre_stmts = vec![];
+        let mut post_stmts = vec![];
         let mut exprs = vec![];
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::StrongExpr => exprs.push(Self::parse_strong_expr(root_item)),
+                Rule::StrongExpr => {
+                    let expr = Self::parse_strong_expr(root_item);
+                    if expr.0.len() + expr.2.len() > 0 {
+                        panic!()
+                    }
+                    exprs.push(expr.1);
+                }
                 _ => unreachable!(),
             }
         }
-        let expr = exprs.remove(0);
-        AstExpr::Switch(AstSwitchExpr {
-            expr: Box::new(expr),
+        let expr = AstExpr::Switch(AstSwitchExpr {
+            expr: Box::new(exprs.remove(0)),
             conds: vec![
                 AstExpr::Value(FasValue::Bool(true)),
                 AstExpr::Value(FasValue::Bool(false)),
             ],
             values: exprs,
-        })
+        });
+        (pre_stmts, expr, post_stmts)
     }
 
-    fn parse_op2_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
+    fn parse_op2_expr(root: pest::iterators::Pair<'_, Rule>) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
+        let mut pre_stmts = vec![];
+        let mut post_stmts = vec![];
         let mut exprs = vec![];
         let mut ops = vec![];
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::StrongExpr => exprs.push(AstExpr::parse_strong_expr(root_item)),
+                Rule::StrongExpr => {
+                    let expr = AstExpr::parse_strong_expr(root_item);
+                    pre_stmts.extend(expr.0);
+                    exprs.push(expr.1);
+                    post_stmts.extend(expr.2);
+                }
                 Rule::CalcOp => ops.push(root_item.as_str().to_string()),
                 _ => unreachable!(),
             }
         }
-        Self::parse_op2_expr_impl(&mut exprs, &mut ops)
+        let expr = Self::parse_op2_expr_impl(&mut exprs, &mut ops);
+        (pre_stmts, expr, post_stmts)
     }
 
     fn parse_op2_expr_impl(exprs: &mut [AstExpr], ops: &mut [String]) -> AstExpr {
@@ -106,7 +126,11 @@ impl AstExpr {
         }
     }
 
-    fn parse_strong_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
+    fn parse_strong_expr(
+        root: pest::iterators::Pair<'_, Rule>,
+    ) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
+        let mut pre_stmts = vec![];
+        let mut post_stmts = vec![];
         let mut prefixs = vec![];
         let mut oexpr = None;
         let mut suffix_ctxs = vec![];
@@ -122,13 +146,52 @@ impl AstExpr {
             }
         }
         let mut expr = oexpr.unwrap();
-        while let Some(prefix) = prefixs.pop() {
-            expr = AstOp1Expr::new(expr, prefix, true);
+        while let Some(prefix_op) = prefixs.pop() {
+            match &prefix_op[..] {
+                "++" => {
+                    pre_stmts.push(AstStmt::Expr(AstOp2Expr::new(
+                        expr.clone(),
+                        "+=".to_string(),
+                        AstExpr::Value(FasValue::Int(1)),
+                    )));
+                }
+                "--" => {
+                    pre_stmts.push(AstStmt::Expr(AstOp2Expr::new(
+                        expr.clone(),
+                        "-=".to_string(),
+                        AstExpr::Value(FasValue::Int(1)),
+                    )));
+                }
+                _ => expr = AstOp1Expr::new(expr, prefix_op, true),
+            }
         }
         for suffix_ctx in suffix_ctxs {
             match suffix_ctx.as_rule() {
+                Rule::BaseExprSuffixBase => {
+                    let suffix_op = suffix_ctx.get_id();
+                    match &suffix_op[..] {
+                        "++" => {
+                            post_stmts.push(AstStmt::Expr(AstOp2Expr::new(
+                                expr.clone(),
+                                "+=".to_string(),
+                                AstExpr::Value(FasValue::Int(1)),
+                            )));
+                        }
+                        "--" => {
+                            post_stmts.push(AstStmt::Expr(AstOp2Expr::new(
+                                expr.clone(),
+                                "-=".to_string(),
+                                AstExpr::Value(FasValue::Int(1)),
+                            )));
+                        }
+                        _ => expr = AstOp1Expr::new(expr, suffix_op, false),
+                    };
+                }
                 Rule::BaseExprSuffixInvoke => {
-                    expr = AstInvokeExpr::new(expr, Self::parse_exprs(suffix_ctx));
+                    let args = Self::parse_exprs(suffix_ctx);
+                    pre_stmts.extend(args.0);
+                    expr = AstInvokeExpr::new(expr, args.1);
+                    post_stmts.extend(args.2);
                 }
                 Rule::BaseExprSuffixArrayAccess => unreachable!(),
                 Rule::BaseExprSuffixAccess => {
@@ -141,7 +204,7 @@ impl AstExpr {
                 _ => unreachable!(),
             }
         }
-        expr
+        (pre_stmts, expr, post_stmts)
     }
 
     fn parse_base_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
@@ -198,15 +261,24 @@ impl AstExpr {
         AstExpr::Index(index_expr)
     }
 
-    fn parse_exprs(root: pest::iterators::Pair<'_, Rule>) -> Vec<Self> {
+    fn parse_exprs(
+        root: pest::iterators::Pair<'_, Rule>,
+    ) -> (Vec<AstStmt>, Vec<Self>, Vec<AstStmt>) {
+        let mut pre_stmts = vec![];
+        let mut post_stmts = vec![];
         let mut exprs = vec![];
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::Expr => exprs.push(Self::parse(root_item)),
+                Rule::Expr => {
+                    let expr = Self::parse(root_item);
+                    pre_stmts.extend(expr.0);
+                    exprs.push(expr.1);
+                    post_stmts.extend(expr.2);
+                }
                 _ => unreachable!(),
             }
         }
-        exprs
+        (pre_stmts, exprs, post_stmts)
     }
 
     pub fn get_type(&self) -> AstType {
@@ -225,8 +297,8 @@ impl AstExpr {
     }
 }
 
-impl ParseExt for AstExpr {
-    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
+impl Parse2Ext for AstExpr {
+    fn parse(root: pest::iterators::Pair<'_, Rule>) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
         let mut name_exprs = vec![];
         let mut assign_ops = vec![];
         let mut middle_expr = None;
@@ -244,7 +316,7 @@ impl ParseExt for AstExpr {
                 Some(middle_expr) => middle_expr,
                 None => unreachable!(),
             };
-            middle_expr = Some(AstOp2Expr::new(left, op, right));
+            middle_expr = Some((right.0, AstOp2Expr::new(left, op, right.1), right.2));
         }
         match middle_expr {
             Some(middle_expr) => middle_expr,

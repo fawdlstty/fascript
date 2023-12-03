@@ -2,7 +2,7 @@ pub mod blocks;
 pub mod exprs;
 pub mod stmts;
 pub mod types;
-use self::types::AstType;
+use self::{stmts::AstStmt, types::AstType};
 pub use pest::Parser;
 pub use pest_derive::Parser;
 
@@ -61,4 +61,16 @@ impl PestApiExt for pest::iterators::Pair<'_, Rule> {
 
 pub trait ParseExt {
     fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self;
+}
+
+pub trait Parse2Ext {
+    fn parse(root: pest::iterators::Pair<'_, Rule>) -> (Vec<AstStmt>, Self, Vec<AstStmt>)
+    where
+        Self: Sized;
+}
+
+pub trait Parse3Ext {
+    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Vec<AstStmt>
+    where
+        Self: Sized;
 }

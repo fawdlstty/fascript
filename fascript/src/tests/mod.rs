@@ -1,4 +1,7 @@
+mod test_operator;
+mod test_utils;
+
 #[test]
 fn test_func() {
-    assert_eq!(1, 1);
+    assert!(true);
 }
