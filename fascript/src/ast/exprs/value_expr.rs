@@ -2,7 +2,47 @@ use super::func_expr::AstFuncExpr;
 use crate::ast::types::array_type::AstArrayType;
 use crate::ast::types::map_type::AstMapType;
 use crate::ast::types::AstType;
+use crossbeam::channel;
 use std::collections::HashMap;
+
+#[derive(Clone, Debug)]
+pub enum TaskControl {
+    Pause,
+    Resume,
+    Cancel,
+    Rollback,
+}
+
+#[derive(Clone, Debug)]
+pub enum TaskResult {
+    ProgressFeedback(FasValue),
+    Finish(FasValue),
+    Canceled,
+    Rolledback,
+}
+
+#[derive(Clone, Debug)]
+pub struct TaskValue {
+    ctrl_tx: channel::Sender<TaskControl>,
+    result_rx: channel::Receiver<TaskResult>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TaskValueShadow {
+    ctrl_rx: channel::Receiver<TaskControl>,
+    result_tx: channel::Sender<TaskResult>,
+}
+
+impl TaskValue {
+    pub fn create() -> (TaskValue, TaskValueShadow) {
+        let (ctrl_tx, ctrl_rx) = channel::unbounded();
+        let (result_tx, result_rx) = channel::unbounded();
+        (
+            TaskValue { ctrl_tx, result_rx },
+            TaskValueShadow { ctrl_rx, result_tx },
+        )
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum FasValue {
@@ -15,10 +55,12 @@ pub enum FasValue {
     IMap(HashMap<i64, FasValue>),
     SMap(HashMap<String, FasValue>),
     Func(Box<AstFuncExpr>),
+    Task(TaskValue),
 }
 
 impl PartialEq for FasValue {
     fn eq(&self, other: &Self) -> bool {
+        let (tx, rx) = channel::unbounded::<i32>();
         match (self, other) {
             (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
             (Self::Int(l0), Self::Int(r0)) => l0 == r0,
@@ -65,6 +107,7 @@ impl FasValue {
                 AstMapType::new(AstType::String, value_type)
             }
             FasValue::Func(f) => f.func.get_type(),
+            FasValue::Task(_) => AstType::Task,
         }
     }
 
@@ -97,6 +140,7 @@ impl FasValue {
                 format!("{{ {} }}", items.join(", "))
             }
             FasValue::Func(_) => "(func)".to_string(),
+            FasValue::Task(_) => "(task)".to_string(),
         }
     }
 
@@ -162,6 +206,7 @@ impl FasValue {
                 AstType::String => self.as_str().into(),
                 AstType::Tuple(_) => todo!(),
                 AstType::Void => FasValue::None,
+                AstType::Task => todo!(),
             }
         } else {
             self.clone()

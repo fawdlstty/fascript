@@ -22,6 +22,7 @@ pub enum AstType {
     String,
     Tuple(AstTupleType),
     Void,
+    Task,
 }
 
 impl AstType {
