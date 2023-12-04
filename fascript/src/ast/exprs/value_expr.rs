@@ -56,11 +56,11 @@ pub enum FasValue {
     SMap(HashMap<String, FasValue>),
     Func(Box<AstFuncExpr>),
     Task(TaskValue),
+    //let (tx, rx) = channel::unbounded::<i32>();
 }
 
 impl PartialEq for FasValue {
     fn eq(&self, other: &Self) -> bool {
-        let (tx, rx) = channel::unbounded::<i32>();
         match (self, other) {
             (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
             (Self::Int(l0), Self::Int(r0)) => l0 == r0,

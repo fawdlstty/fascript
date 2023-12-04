@@ -29,7 +29,7 @@ Ids =  { (Id ~ ".")* ~ Id }
 MapType     = { "map" ~ (QJIAN_L ~ Type ~ COMMA ~ Type ~ QJIAN_R)? }
 TupleType   = { QYUAN_L ~ (Type ~ COMMA)+ ~ Type ~ QYUAN_R }
 FuncType    = { "func" ~ QJIAN_L ~ (Type ~ COMMA)* ~ Type ~ QJIAN_R }
-BaseTypeStr = { "bool" | "dynamic" | "float" | "int" | "string" }
+BaseTypeStr = { "bool" | "dynamic" | "float" | "int" | "string" | "task" }
 BaseType    = { BaseTypeStr | MapType | TupleType | FuncType }
 VoidType    = { "void" }
 TypeSuffix  = { "[]" | "?" }
@@ -48,7 +48,7 @@ TupleExpr                 = { QYUAN_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QYUAN
 QuotExpr                  = { QYUAN_L ~ Expr ~ QYUAN_R }
 ArrayExpr                 = { QFANG_L ~ (IndexExpr | Expr) ~ QFANG_R }
 BaseExpr                  = { Literal | NewExpr | LambdaExpr | TupleExpr | QuotExpr | Id | ArrayExpr }
-BaseExprPrefix            = { "++" | "--" | "-" | "~" | "!" }
+BaseExprPrefix            = { "++" | "--" | "-" | "~" | "!" | "await" }
 BaseExprSuffixBase        = { "++" | "--" }
 BaseExprSuffixInvoke      = { QYUAN_L ~ (Expr ~ (COMMA ~ Expr)*)? ~ QYUAN_R }
 BaseExprSuffixArrayAccess = { QFANG_L ~ IndexExpr ~ QFANG_R }
@@ -80,10 +80,10 @@ DoWhileStmt    = { "do" ~ QHUA_L ~ Stmts ~ QHUA_R ~ "while" ~ MiddleExpr }
 WhileStmt      = { "while" ~ MiddleExpr ~ QHUA_L ~ Stmts ~ QHUA_R }
 DefVarItemPart = { Id ~ "=" ~ MiddleExpr }
 DefVarStmt     = { (Type | "var") ~ DefVarItemPart ~ ("," ~ DefVarItemPart)* }
-FuncStmt       = { Type ~ (Type ~ ".")? ~ Id ~ ArgPairs ~ FuncBody }
 ExprStmt       = { Expr }
-Stmt           = { ForStmt | IfStmt | BreakStmt | ContinueStmt | DoWhileStmt | WhileStmt | DefVarStmt | FuncStmt | ExprStmt }
+FunAnnoPart    = { "@" ~ Id ~ "=" ~ MiddleExpr ~ LINE }
+FuncStmt       = { FunAnnoPart* ~ Type ~ Id ~ ArgPairs ~ FuncBody }
+Stmt           = { ForStmt | IfStmt | BreakStmt | ContinueStmt | DoWhileStmt | WhileStmt | DefVarStmt | ExprStmt | FuncStmt }
 Stmts          = { LINE? ~ (Stmt ~ LINE)* ~ Stmt? ~ LINE? }
 
-// FuncBlock   = { "func" ~ ("Object" ~ ".")? ~ Id ~ ArgPairs? ~ FuncBody ~ LINE }
 ProgramFile = { SOI ~ LINE? ~ Stmts ~ EOI }

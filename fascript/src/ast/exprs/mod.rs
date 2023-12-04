@@ -19,7 +19,7 @@ use self::{func_expr::AstFuncExpr, index_expr::AstIndexExpr};
 use super::blocks::func::AstFunc;
 use super::stmts::AstStmt;
 use super::Parse2Ext;
-use super::{types::AstType, ParseExt, PestApiExt, Rule};
+use super::{types::AstType, PestApiExt, Rule};
 use crate::utils::{oper_utils::OperUtils, str_utils::StrUtils};
 
 #[derive(Clone, Debug)]

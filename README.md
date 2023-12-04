@@ -10,5 +10,4 @@ fascript 脚本语言
 TODO:
 
 - Task支持
-- Annotation支持
 - 异步支持

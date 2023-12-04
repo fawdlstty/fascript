@@ -3,13 +3,18 @@ use fascript::FasRuntime;
 #[tokio::main]
 async fn main() {
     let code_str = r#"
-    void main() {
-        os.println("hello world")
-        os.pppp = (string s) => os.println(s)
-        os.pppp("aaa")
-        os.pppp("bbb")
+    //void main() {
+    //    os.println("hello world")
+    //    os.pppp = (string s) => os.println(s)
+    //    os.pppp("aaa")
+    //    os.pppp("bbb")
+    //}
+    //main()
+    @retry = 3
+    task retry_func() {
+        os.println("on retry_func()")
     }
-    main()
+    await retry_func()
     "#;
     let mut runtime = FasRuntime::new();
     //runtime.set_func("my_println", |value: String| println!("{}", value));

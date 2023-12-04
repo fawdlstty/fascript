@@ -1,10 +1,12 @@
 use super::op2_calc::Op2Calc;
+use crate::ast::blocks::func::AstFunAnnoPart;
 use crate::ast::blocks::func::AstFunc;
 use crate::ast::blocks::func::AstManagedFunc;
 use crate::ast::exprs::invoke_expr::AstInvokeExpr;
 use crate::ast::exprs::op1_expr::AstOp1Expr;
 use crate::ast::exprs::op2_expr::AstOp2Expr;
 use crate::ast::exprs::value_expr::FasValue;
+use crate::ast::exprs::value_expr::TaskValue;
 use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
 use crate::ast::types::AstType;
@@ -283,19 +285,63 @@ impl TaskRunner {
                     .call(args.into_iter().map(|x| self.eval_expr(x)).collect());
             }
             AstFunc::AstManagedFunc(func) => {
-                let loop_ctrl = self.loop_ctrl.clone();
-                self.loop_ctrl = LoopControl::None;
-                self.add_level_invoke(&func, &args);
-                self.eval_stmts(func.body_stmts.clone());
-                if self.ret_value.is_some() {
-                    let mut ret_value = None;
-                    std::mem::swap(&mut ret_value, &mut self.ret_value);
-                    ret = ret_value.unwrap();
+                let mut annos = func.annotations.clone();
+                if func.ret_type != AstType::Task {
+                    ret = self.invoke_func_pure_impl(&func, &args);
+                } else {
+                    let (ret_val, ret_val2) = TaskValue::create();
+                    tokio::spawn(async move {
+                        let mut pause_expr = None;
+                        let mut resume_expr = None;
+                        let mut degradation_expr = None;
+                        let mut rollback_expr = None;
+                        if annos.len() == 0 {
+                            annos.push(AstFunAnnoPart {
+                                anno_type: "retry".to_string(),
+                                anno_expr: AstExpr::Value(FasValue::Int(1)),
+                            });
+                        }
+                        for anno in annos {
+                            match &anno.anno_type[..] {
+                                "pause" => pause_expr = Some(anno.anno_expr),
+                                "resume" => resume_expr = Some(anno.anno_expr),
+                                "degradation" => degradation_expr = Some(anno.anno_expr),
+                                "rollback" => rollback_expr = Some(anno.anno_expr),
+                                "retry" => {
+                                    // get retry count
+                                    // retry (on retry: step by step check and run)
+                                    // fail on retry
+                                    // TODO
+                                    panic!()
+                                }
+                                _ => panic!(),
+                            }
+                        }
+                    });
+                    ret = FasValue::Task(ret_val)
                 }
-                self.sub_level();
-                self.loop_ctrl = loop_ctrl;
             }
         }
+        ret
+    }
+
+    pub fn invoke_func_pure_impl(
+        &mut self,
+        func: &AstManagedFunc,
+        args: &Vec<AstExpr>,
+    ) -> FasValue {
+        let mut ret = FasValue::None;
+        let loop_ctrl = self.loop_ctrl.clone();
+        self.loop_ctrl = LoopControl::None;
+        self.add_level_invoke(&func, &args);
+        self.eval_stmts(func.body_stmts.clone());
+        if self.ret_value.is_some() {
+            let mut ret_value = None;
+            std::mem::swap(&mut ret_value, &mut self.ret_value);
+            ret = ret_value.unwrap();
+        }
+        self.sub_level();
+        self.loop_ctrl = loop_ctrl;
         ret
     }
 

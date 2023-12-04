@@ -32,11 +32,13 @@ impl AstType {
 
     pub fn parse_str(type_name: String) -> AstType {
         match &type_name[..] {
+            "void" => AstType::Void,
             "bool" => AstType::Bool,
             "dynamic" => AstType::Dynamic,
             "float" => AstType::Float,
             "int" => AstType::Int,
             "string" => AstType::String,
+            "task" => AstType::Task,
             _ => unreachable!(),
         }
     }

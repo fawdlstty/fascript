@@ -1,3 +1,4 @@
+use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
 use crate::ast::types::func_type::AstFuncType;
 use crate::ast::types::AstType;
@@ -87,7 +88,47 @@ impl Debug for AstNativeFunc {
 }
 
 #[derive(Clone, Debug)]
+pub struct AstFunAnnoPart {
+    pub anno_type: String,
+    pub anno_expr: AstExpr,
+}
+
+unsafe impl Send for AstFunAnnoPart {}
+
+impl ParseExt for AstFunAnnoPart {
+    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
+        let mut anno_type = "".to_string();
+        let mut anno_expr = AstExpr::None;
+        for root_item in root.into_inner() {
+            match root_item.as_rule() {
+                Rule::Id => {
+                    anno_type = root_item.get_id();
+                    if !vec!["pause", "resume", "degradation", "rollback", "retry"]
+                        .contains(&&anno_type[..])
+                    {
+                        panic!()
+                    }
+                }
+                Rule::MiddleExpr => {
+                    let expr = AstExpr::parse_middle_expr(root_item);
+                    if expr.0.len() + expr.2.len() > 0 {
+                        panic!()
+                    }
+                    anno_expr = expr.1;
+                }
+                _ => unreachable!(),
+            }
+        }
+        AstFunAnnoPart {
+            anno_type,
+            anno_expr,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct AstManagedFunc {
+    pub annotations: Vec<AstFunAnnoPart>,
     pub ret_type: AstType,
     pub name: String,
     pub arg_types: Vec<AstType>,
@@ -95,9 +136,12 @@ pub struct AstManagedFunc {
     pub body_stmts: Vec<AstStmt>,
 }
 
+unsafe impl Send for AstManagedFunc {}
+
 impl AstManagedFunc {
     fn parse_lambda(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let mut _func = AstManagedFunc {
+            annotations: vec![],
             ret_type: AstType::new(),
             name: "".to_string(),
             arg_types: vec![],
@@ -122,6 +166,7 @@ impl AstManagedFunc {
 impl ParseExt for AstManagedFunc {
     fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let mut _func = AstManagedFunc {
+            annotations: vec![],
             ret_type: AstType::new(),
             name: "".to_string(),
             arg_types: vec![],
@@ -130,6 +175,7 @@ impl ParseExt for AstManagedFunc {
         };
         for root_item in root.into_inner() {
             match root_item.as_rule() {
+                Rule::FunAnnoPart => _func.annotations.push(AstFunAnnoPart::parse(root_item)),
                 Rule::Type => _func.ret_type = AstType::parse(root_item),
                 Rule::Id => _func.name = root_item.get_id(),
                 Rule::ArgPairs => (_func.arg_types, _func.arg_names) = root_item.get_arg_pairs(),
