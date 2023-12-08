@@ -9,7 +9,7 @@ mod tests;
 use crate::ast::exprs::value_expr::FasValue;
 use ast::blocks::program::AstProgram;
 use ast::FromStringExt;
-use exec::task_runner::TaskRunner;
+use exec::{runtime_base::RuntimeBase, task_runner::TaskRunner};
 use utils::native_func_utils::{FasCallable, FasToWrapper};
 
 pub struct FasRuntime {
@@ -18,8 +18,9 @@ pub struct FasRuntime {
 
 impl FasRuntime {
     pub fn new() -> FasRuntime {
+        let base = RuntimeBase::new();
         FasRuntime {
-            runner: TaskRunner::new(),
+            runner: TaskRunner::new(base),
         }
     }
 
