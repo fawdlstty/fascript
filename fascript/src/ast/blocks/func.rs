@@ -8,94 +8,128 @@ use crate::ast::Rule;
 use crate::FasCallable;
 use std::fmt::Debug;
 
-#[derive(Clone, Debug)]
 pub enum AstFunc {
-    AstNativeFunc(AstNativeFunc),
-    AstManagedFunc(AstManagedFunc),
+    NativeFunc(Box<dyn FasCallable>),
+    FasFunc(FasFunc),
+    FasTask(FasTask),
 }
 
 impl AstFunc {
-    pub fn get_ret_type(&self) -> AstType {
-        match self {
-            AstFunc::AstNativeFunc(func) => func.ret_type.clone(),
-            AstFunc::AstManagedFunc(func) => func.ret_type.clone(),
-        }
+    pub fn parse_lambda(root: pest::iterators::Pair<'_, Rule>) -> Self {
+        AstFunc::FasFunc(FasFunc::parse_lambda(root))
     }
 
     pub fn get_name(&self) -> String {
         match self {
-            AstFunc::AstNativeFunc(func) => func.name.clone(),
-            AstFunc::AstManagedFunc(func) => func.name.clone(),
-        }
-    }
-
-    pub fn get_arg_types(&self) -> Vec<AstType> {
-        match self {
-            AstFunc::AstNativeFunc(func) => func.arg_types.clone(),
-            AstFunc::AstManagedFunc(func) => func.arg_types.clone(),
-        }
-    }
-
-    pub fn get_arg_names(&self) -> Vec<String> {
-        match self {
-            AstFunc::AstNativeFunc(func) => func.arg_types.iter().map(|_| "".to_string()).collect(),
-            AstFunc::AstManagedFunc(func) => func.arg_names.clone(),
+            AstFunc::NativeFunc(_) => "".to_string(),
+            AstFunc::FasFunc(func) => func.name.clone(),
+            AstFunc::FasTask(task) => task.name.clone(),
         }
     }
 
     pub fn get_type(&self) -> AstType {
-        AstFuncType::new(self.get_arg_types(), self.get_ret_type())
-    }
-
-    pub fn parse_lambda(root: pest::iterators::Pair<'_, Rule>) -> Self {
-        AstFunc::AstManagedFunc(AstManagedFunc::parse_lambda(root))
+        AstFuncType::new(match self {
+            AstFunc::NativeFunc(nfunc) => nfunc.get_arg_count(),
+            AstFunc::FasFunc(func) => func.arg_names.len(),
+            AstFunc::FasTask(task) => task.arg_names.len(),
+        })
     }
 }
 
 impl ParseExt for AstFunc {
     fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
-        AstFunc::AstManagedFunc(AstManagedFunc::parse(root))
-    }
-}
-
-//#[derive(Clone)]
-pub struct AstNativeFunc {
-    pub ret_type: AstType,
-    pub name: String,
-    pub arg_types: Vec<AstType>,
-    pub func_impl: Box<dyn FasCallable>,
-}
-
-impl Clone for AstNativeFunc {
-    fn clone(&self) -> Self {
-        Self {
-            ret_type: self.ret_type.clone(),
-            name: self.name.clone(),
-            arg_types: self.arg_types.clone(),
-            func_impl: self.func_impl.clone(),
+        match root.as_rule() {
+            Rule::FuncStmt => AstFunc::FasFunc(FasFunc::parse(root)),
+            Rule::TaskStmt => AstFunc::FasTask(FasTask::parse(root)),
+            _ => unreachable!(),
         }
     }
 }
 
-impl Debug for AstNativeFunc {
+impl Clone for AstFunc {
+    fn clone(&self) -> Self {
+        match self {
+            Self::NativeFunc(arg0) => Self::NativeFunc(arg0.clone_()),
+            Self::FasFunc(arg0) => Self::FasFunc(arg0.clone()),
+            Self::FasTask(arg0) => Self::FasTask(arg0.clone()),
+        }
+    }
+}
+
+impl Debug for AstFunc {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AstNativeFunc")
-            .field("ret_type", &self.ret_type)
-            .field("name", &self.name)
-            .field("arg_types", &self.arg_types)
-            .finish()
+        match self {
+            Self::NativeFunc(arg0) => f.debug_struct("NativeFunc").finish(),
+            Self::FasFunc(arg0) => f.debug_tuple("FasFunc").field(arg0).finish(),
+            Self::FasTask(arg0) => f.debug_tuple("FasTask").field(arg0).finish(),
+        }
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct AstFunAnnoPart {
+pub struct FasFunc {
+    pub name: String,
+    pub arg_names: Vec<String>,
+    pub body_stmts: Vec<AstStmt>,
+}
+
+impl ParseExt for FasFunc {
+    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
+        let mut _func = FasFunc {
+            name: "".to_string(),
+            arg_names: vec![],
+            body_stmts: vec![],
+        };
+        for root_item in root.into_inner() {
+            match root_item.as_rule() {
+                Rule::Id => _func.name = root_item.get_id(),
+                Rule::Args => _func.arg_names = root_item.get_ids(),
+                Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
+                _ => unreachable!(),
+            }
+        }
+        _func
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct FasTask {
+    pub annotations: Vec<AstAnnoPart>,
+    pub name: String,
+    pub arg_names: Vec<String>,
+    pub body_stmts: Vec<AstStmt>,
+}
+
+impl ParseExt for FasTask {
+    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
+        let mut _func = FasTask {
+            annotations: vec![],
+            name: "".to_string(),
+            arg_names: vec![],
+            body_stmts: vec![],
+        };
+        for root_item in root.into_inner() {
+            match root_item.as_rule() {
+                Rule::AnnoPart => _func.annotations.push(AstAnnoPart::parse(root_item)),
+                Rule::Id => _func.name = root_item.get_id(),
+                Rule::Args => _func.arg_names = root_item.get_ids(),
+                Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
+                _ => unreachable!(),
+            }
+        }
+        _func
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct AstAnnoPart {
     pub anno_type: String,
     pub anno_expr: AstExpr,
 }
 
-unsafe impl Send for AstFunAnnoPart {}
+unsafe impl Send for AstAnnoPart {}
 
-impl ParseExt for AstFunAnnoPart {
+impl ParseExt for AstAnnoPart {
     fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let mut anno_type = "".to_string();
         let mut anno_expr = AstExpr::None;
@@ -119,66 +153,28 @@ impl ParseExt for AstFunAnnoPart {
                 _ => unreachable!(),
             }
         }
-        AstFunAnnoPart {
+        AstAnnoPart {
             anno_type,
             anno_expr,
         }
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct AstManagedFunc {
-    pub annotations: Vec<AstFunAnnoPart>,
-    pub ret_type: AstType,
-    pub name: String,
-    pub arg_types: Vec<AstType>,
-    pub arg_names: Vec<String>,
-    pub body_stmts: Vec<AstStmt>,
-}
+// unsafe impl Send for FasFunc {}
 
-unsafe impl Send for AstManagedFunc {}
-
-impl AstManagedFunc {
-    fn parse_lambda(root: pest::iterators::Pair<'_, Rule>) -> Self {
-        let mut _func = AstManagedFunc {
-            annotations: vec![],
-            ret_type: AstType::new(),
+impl FasFunc {
+    pub fn parse_lambda(root: pest::iterators::Pair<'_, Rule>) -> Self {
+        let mut _func = FasFunc {
             name: "".to_string(),
-            arg_types: vec![],
             arg_names: vec![],
             body_stmts: vec![],
         };
         for root_item in root.into_inner() {
             match root_item.as_rule() {
                 Rule::Id => {
-                    _func.arg_types.push(AstType::Dynamic);
                     _func.arg_names.push(root_item.get_id());
                 }
-                Rule::ArgPairs => (_func.arg_types, _func.arg_names) = root_item.get_arg_pairs(),
-                Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
-                _ => unreachable!(),
-            }
-        }
-        _func
-    }
-}
-
-impl ParseExt for AstManagedFunc {
-    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
-        let mut _func = AstManagedFunc {
-            annotations: vec![],
-            ret_type: AstType::new(),
-            name: "".to_string(),
-            arg_types: vec![],
-            arg_names: vec![],
-            body_stmts: vec![],
-        };
-        for root_item in root.into_inner() {
-            match root_item.as_rule() {
-                Rule::FunAnnoPart => _func.annotations.push(AstFunAnnoPart::parse(root_item)),
-                Rule::Type => _func.ret_type = AstType::parse(root_item),
-                Rule::Id => _func.name = root_item.get_id(),
-                Rule::ArgPairs => (_func.arg_types, _func.arg_names) = root_item.get_arg_pairs(),
+                Rule::Args => _func.arg_names = root_item.get_ids(),
                 Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
                 _ => unreachable!(),
             }

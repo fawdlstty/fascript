@@ -101,6 +101,8 @@ pub struct RuntimeBase {
     base_vars: Arc<Mutex<Variables>>,
 }
 
+unsafe impl Send for RuntimeBase {}
+
 impl RuntimeBase {
     pub fn new() -> RuntimeBase {
         let mut vars = Variables::new(VariablesType::IndentVariables);

@@ -77,13 +77,15 @@ impl Parse3Ext for AstStmt {
                 }
                 Rule::ForStmt => AstForStmt::parse(root_item),
                 Rule::FuncStmt => {
-                    //return AstStmt::Expr(AstExpr::parse(root_item.into_inner().next().unwrap()))
                     let func = AstFunc::parse(root_item);
-                    let stmt = AstDefVarStmt::new(
-                        func.get_type(),
-                        func.get_name(),
-                        AstExpr::Func(AstFuncExpr::new(func)),
-                    );
+                    let stmt =
+                        AstDefVarStmt::new(func.get_name(), AstExpr::Func(AstFuncExpr::new(func)));
+                    vec![stmt]
+                }
+                Rule::TaskStmt => {
+                    let func = AstFunc::parse(root_item);
+                    let stmt =
+                        AstDefVarStmt::new(func.get_name(), AstExpr::Func(AstFuncExpr::new(func)));
                     vec![stmt]
                 }
                 Rule::IfStmt => AstIfStmt::parse(root_item),

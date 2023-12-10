@@ -38,10 +38,9 @@ Type        = { VoidType | (BaseType ~ TypeSuffix*) }
 Expr1                     = { BaseExpr }
 Expr2                     = { BaseExpr }
 IndexExpr                 = { Expr1? ~ ".." ~ Expr2? }
-ArgPair                   = { Type? ~ Id }
-ArgPairs                  = { QYUAN_L ~ ((ArgPair ~ COMMA)? ~ ArgPair)? ~ QYUAN_R }
+Args                      = { QYUAN_L ~ ((Id ~ COMMA)? ~ Id)? ~ QYUAN_R }
 FuncBody                  = { ("=>" ~ Expr) | (QHUA_L ~ Stmts ~ QHUA_R) }
-LambdaExpr                = { (Id | ArgPairs) ~ FuncBody }
+LambdaExpr                = { (Id | Args) ~ FuncBody }
 NewExpr                   = { QHUA_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QHUA_R }
 TuplePair                 = { Id ~ ":" ~ Expr }
 TupleExpr                 = { QYUAN_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QYUAN_R }
@@ -79,11 +78,12 @@ ContinueStmt   = { "continue" ~ Id? }
 DoWhileStmt    = { "do" ~ QHUA_L ~ Stmts ~ QHUA_R ~ "while" ~ MiddleExpr }
 WhileStmt      = { "while" ~ MiddleExpr ~ QHUA_L ~ Stmts ~ QHUA_R }
 DefVarItemPart = { Id ~ "=" ~ MiddleExpr }
-DefVarStmt     = { (Type | "var") ~ DefVarItemPart ~ ("," ~ DefVarItemPart)* }
+DefVarStmt     = { "var" ~ DefVarItemPart ~ ("," ~ DefVarItemPart)* }
 ExprStmt       = { Expr }
-FunAnnoPart    = { "@" ~ Id ~ "=" ~ MiddleExpr ~ LINE }
-FuncStmt       = { FunAnnoPart* ~ Type ~ Id ~ ArgPairs ~ FuncBody }
-Stmt           = { ForStmt | IfStmt | BreakStmt | ContinueStmt | DoWhileStmt | WhileStmt | DefVarStmt | ExprStmt | FuncStmt }
+FuncStmt       = { "func" ~ Id ~ Args ~ FuncBody }
+AnnoPart       = { "@" ~ Id ~ "=" ~ MiddleExpr ~ LINE }
+TaskStmt       = { AnnoPart* ~ "task" ~ Id ~ Args ~ FuncBody }
+Stmt           = { ForStmt | IfStmt | BreakStmt | ContinueStmt | DoWhileStmt | WhileStmt | DefVarStmt | ExprStmt | FuncStmt | TaskStmt }
 Stmts          = { LINE? ~ (Stmt ~ LINE)* ~ Stmt? ~ LINE? }
 
 ProgramFile = { SOI ~ LINE? ~ Stmts ~ EOI }

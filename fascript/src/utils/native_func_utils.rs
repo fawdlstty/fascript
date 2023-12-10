@@ -1,4 +1,4 @@
-use crate::ast::blocks::func::{AstFunc, AstNativeFunc};
+use crate::ast::blocks::func::AstFunc;
 use crate::ast::exprs::func_expr::AstFuncExpr;
 use crate::ast::exprs::value_expr::{FasValue, GetAstTypeTrait};
 use std::collections::HashMap;
@@ -6,8 +6,9 @@ use std::marker::PhantomData;
 
 pub trait FasCallable {
     fn call(&self, args: Vec<FasValue>) -> FasValue;
-    fn clone(&self) -> Box<dyn FasCallable + 'static>;
+    fn clone_(&self) -> Box<dyn FasCallable + 'static>;
     fn to_fas_value(self, func_name: String) -> FasValue;
+    fn get_arg_count(&self) -> usize;
 }
 
 pub trait FasToWrapper<T> {
@@ -18,7 +19,7 @@ pub trait FasToWrapper<T> {
 //
 
 macro_rules! FasWrapper {
-    ($sname:ident) => {
+    ($sname:ident $n:expr) => {
         pub struct $sname<T: Fn() -> R, R>(T, PhantomData<R>);
 
         impl<T, R> FasCallable for $sname<T, R>
@@ -31,21 +32,25 @@ macro_rules! FasWrapper {
                 r.into()
             }
 
-            fn clone(&self) -> Box<dyn FasCallable + 'static> {
+            fn clone_(&self) -> Box<dyn FasCallable + 'static> {
                 let copy = Self(self.0.clone(), PhantomData);
                 Box::new(copy)
             }
 
             fn to_fas_value(self, func_name: String) -> FasValue {
-                let native_func = AstNativeFunc {
-                    ret_type: R::get_ast_type(),
-                    name: func_name,
-                    arg_types: vec![],
-                    func_impl: Box::new(self),
-                };
-                FasValue::Func(Box::new(AstFuncExpr::new(AstFunc::AstNativeFunc(
-                    native_func,
+                // let native_func = AstNativeFunc {
+                //     ret_type: R::get_ast_type(),
+                //     name: func_name,
+                //     arg_types: vec![],
+                //     func_impl: Box::new(self),
+                // };
+                FasValue::Func(Box::new(AstFuncExpr::new(AstFunc::NativeFunc(
+                    Box::new(self),
                 ))))
+            }
+
+            fn get_arg_count(&self) -> usize {
+                $n
             }
         }
 
@@ -61,7 +66,7 @@ macro_rules! FasWrapper {
             }
         }
     };
-    ($sname:ident $(, $name1:ident $name2:ident $idx:expr)*) => {
+    ($sname:ident $n:expr $(, $name1:ident $name2:ident $idx:expr)*) => {
         pub struct $sname<T: Fn($($name1,)*) -> R, $($name1,)* R>(T, PhantomData<($($name1,)* R)>);
 
         impl<T, $($name1,)* R> FasCallable for $sname<T, $($name1,)* R>
@@ -76,21 +81,25 @@ macro_rules! FasWrapper {
                 r.into()
             }
 
-            fn clone(&self) -> Box<dyn FasCallable + 'static> {
+            fn clone_(&self) -> Box<dyn FasCallable + 'static> {
                 let copy = Self(self.0.clone(), PhantomData);
                 Box::new(copy)
             }
 
             fn to_fas_value(self, func_name: String) -> FasValue {
-                let native_func = AstNativeFunc {
-                    ret_type: R::get_ast_type(),
-                    name: func_name,
-                    arg_types: vec![$($name1::get_ast_type(),)*],
-                    func_impl: Box::new(self),
-                };
-                FasValue::Func(Box::new(AstFuncExpr::new(AstFunc::AstNativeFunc(
-                    native_func,
+                // let native_func = AstNativeFunc {
+                //     ret_type: R::get_ast_type(),
+                //     name: func_name,
+                //     arg_types: vec![$($name1::get_ast_type(),)*],
+                //     func_impl: Box::new(self),
+                // };
+                FasValue::Func(Box::new(AstFuncExpr::new(AstFunc::NativeFunc(
+                    Box::new(self),
                 ))))
+            }
+
+            fn get_arg_count(&self) -> usize {
+                $n
             }
         }
 
@@ -109,16 +118,16 @@ macro_rules! FasWrapper {
     };
 }
 
-FasWrapper!(FuncWrapper0);
-FasWrapper!(FuncWrapper1, T0 t0 0);
-FasWrapper!(FuncWrapper2, T0 t0 0, T1 t1 1);
-FasWrapper!(FuncWrapper3, T0 t0 0, T1 t1 1, T2 t2 2);
-FasWrapper!(FuncWrapper4, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3);
-FasWrapper!(FuncWrapper5, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4);
-FasWrapper!(FuncWrapper6, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5);
-FasWrapper!(FuncWrapper7, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5, T7 t7 7);
-FasWrapper!(FuncWrapper8, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5, T7 t7 7, T8 t8 8);
-FasWrapper!(FuncWrapper9, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5, T7 t7 7, T8 t8 8, T9 t9 9);
+FasWrapper!(FuncWrapper0 0);
+FasWrapper!(FuncWrapper1 1, T0 t0 0);
+FasWrapper!(FuncWrapper2 2, T0 t0 0, T1 t1 1);
+FasWrapper!(FuncWrapper3 3, T0 t0 0, T1 t1 1, T2 t2 2);
+FasWrapper!(FuncWrapper4 4, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3);
+FasWrapper!(FuncWrapper5 5, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4);
+FasWrapper!(FuncWrapper6 6, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5);
+FasWrapper!(FuncWrapper7 7, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5, T7 t7 7);
+FasWrapper!(FuncWrapper8 8, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5, T7 t7 7, T8 t8 8);
+FasWrapper!(FuncWrapper9 9, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5, T7 t7 7, T8 t8 8, T9 t9 9);
 
 //
 
