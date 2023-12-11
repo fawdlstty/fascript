@@ -129,6 +129,10 @@ impl AstExpr {
     fn parse_strong_expr(
         root: pest::iterators::Pair<'_, Rule>,
     ) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
+        enum StringOrExpr {
+            String(String),
+            Expr(AstExpr),
+        }
         let mut pre_stmts = vec![];
         let mut post_stmts = vec![];
         let mut prefixs = vec![];
@@ -136,7 +140,24 @@ impl AstExpr {
         let mut suffix_ctxs = vec![];
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::BaseExprPrefix => prefixs.push(root_item.as_str().to_string()),
+                Rule::BaseExprPrefix => {
+                    let root_item = root_item.into_inner().next().unwrap();
+                    match root_item.as_rule() {
+                        Rule::BaseExprPrefixBase => {
+                            prefixs.push(StringOrExpr::String(root_item.as_str().to_string()))
+                        }
+                        Rule::BaseExprPrefixAwait => {
+                            let expr =
+                                AstExpr::parse_middle_expr(root_item.into_inner().next().unwrap());
+                            if expr.0.len() + expr.2.len() > 0 {
+                                panic!()
+                            }
+                            prefixs.push(StringOrExpr::Expr(expr.1))
+                        }
+                        _ => unreachable!(),
+                    }
+                    //
+                }
                 Rule::BaseExpr => oexpr = Some(AstExpr::parse_base_expr(root_item)),
                 Rule::BaseExprSuffix => {
                     let suffix_ctx = root_item.into_inner().next().unwrap();
@@ -147,22 +168,25 @@ impl AstExpr {
         }
         let mut expr = oexpr.unwrap();
         while let Some(prefix_op) = prefixs.pop() {
-            match &prefix_op[..] {
-                "++" => {
-                    pre_stmts.push(AstStmt::Expr(AstOp2Expr::new(
-                        expr.clone(),
-                        "+=".to_string(),
-                        AstExpr::Value(FasValue::Int(1)),
-                    )));
-                }
-                "--" => {
-                    pre_stmts.push(AstStmt::Expr(AstOp2Expr::new(
-                        expr.clone(),
-                        "-=".to_string(),
-                        AstExpr::Value(FasValue::Int(1)),
-                    )));
-                }
-                _ => expr = AstOp1Expr::new(expr, prefix_op, true),
+            match prefix_op {
+                StringOrExpr::String(op_str) => match &op_str[..] {
+                    "++" => {
+                        pre_stmts.push(AstStmt::Expr(AstOp2Expr::new(
+                            expr.clone(),
+                            "+=".to_string(),
+                            AstExpr::Value(FasValue::Int(1)),
+                        )));
+                    }
+                    "--" => {
+                        pre_stmts.push(AstStmt::Expr(AstOp2Expr::new(
+                            expr.clone(),
+                            "-=".to_string(),
+                            AstExpr::Value(FasValue::Int(1)),
+                        )));
+                    }
+                    _ => expr = AstOp1Expr::new(expr, op_str, true),
+                },
+                StringOrExpr::Expr(op_expr) => todo!(),
             }
         }
         for suffix_ctx in suffix_ctxs {
