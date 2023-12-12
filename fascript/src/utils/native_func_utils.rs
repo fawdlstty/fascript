@@ -86,8 +86,8 @@ macro_rules! FasWrapper {
         {
 			#[allow(non_snake_case)]
             fn call(&self, args: Vec<FasValue>) -> FasValue {
-				let mut index = 0;
 				let r = {
+					let mut index = 0;
 					$(let $name1 = $name1::from(args[index].clone());index+=1;)*
 					let _ = index;
 					(self.0)($($name1),*);
