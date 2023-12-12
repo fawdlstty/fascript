@@ -1,28 +1,25 @@
-pub mod array_type;
-pub mod func_type;
-pub mod map_type;
-pub mod tuple_type;
-use self::array_type::AstArrayType;
-use self::func_type::AstFuncType;
-use self::map_type::AstMapType;
-use self::tuple_type::AstTupleType;
-use super::{ParseExt, Rule};
+use super::ParseExt;
+use super::Rule;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum AstType {
     None,
-    Array(AstArrayType),
+    Array,
     Bool,
-    Dynamic,
+    DateTime,
     Float,
-    Func(AstFuncType),
+    Func(usize),
+    Future,
     Index,
     Int,
-    Map(AstMapType),
+    IMap,
+    SMap,
     String,
-    Tuple(AstTupleType),
+    TimeSpan,
+    Tuple(usize),
     Void,
     Task,
+    TaskResult,
 }
 
 impl AstType {
@@ -34,11 +31,12 @@ impl AstType {
         match &type_name[..] {
             "void" => AstType::Void,
             "bool" => AstType::Bool,
-            "dynamic" => AstType::Dynamic,
+            "datetime" => AstType::DateTime,
             "float" => AstType::Float,
             "int" => AstType::Int,
             "string" => AstType::String,
             "task" => AstType::Task,
+            "timespan" => AstType::TimeSpan,
             _ => unreachable!(),
         }
     }

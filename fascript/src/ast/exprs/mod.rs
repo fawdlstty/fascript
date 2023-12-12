@@ -1,3 +1,4 @@
+pub mod await_expr;
 pub mod func_expr;
 pub mod index_expr;
 pub mod invoke_expr;
@@ -8,6 +9,9 @@ pub mod temp_expr;
 pub mod type_wrap_expr;
 pub mod value_expr;
 
+use self::await_expr::AstAwaitExpr;
+use self::func_expr::AstFuncExpr;
+use self::index_expr::AstIndexExpr;
 use self::invoke_expr::AstInvokeExpr;
 use self::op1_expr::AstOp1Expr;
 use self::op2_expr::AstOp2Expr;
@@ -15,16 +19,19 @@ use self::switch_expr::AstSwitchExpr;
 use self::temp_expr::AstTempExpr;
 use self::type_wrap_expr::AstTypeWrapExpr;
 use self::value_expr::FasValue;
-use self::{func_expr::AstFuncExpr, index_expr::AstIndexExpr};
 use super::blocks::func::AstFunc;
 use super::stmts::AstStmt;
+use super::types::AstType;
 use super::Parse2Ext;
-use super::{types::AstType, PestApiExt, Rule};
-use crate::utils::{oper_utils::OperUtils, str_utils::StrUtils};
+use super::PestApiExt;
+use super::Rule;
+use crate::utils::oper_utils::OperUtils;
+use crate::utils::str_utils::StrUtils;
 
 #[derive(Clone, Debug)]
 pub enum AstExpr {
     None,
+    Await(AstAwaitExpr),
     Func(AstFuncExpr),
     Index(AstIndexExpr),
     Invoke(AstInvokeExpr),
@@ -131,7 +138,7 @@ impl AstExpr {
     ) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
         enum StringOrExpr {
             String(String),
-            Expr(AstExpr),
+            OExpr(Option<AstExpr>),
         }
         let mut pre_stmts = vec![];
         let mut post_stmts = vec![];
@@ -147,12 +154,16 @@ impl AstExpr {
                             prefixs.push(StringOrExpr::String(root_item.as_str().to_string()))
                         }
                         Rule::BaseExprPrefixAwait => {
-                            let expr =
-                                AstExpr::parse_middle_expr(root_item.into_inner().next().unwrap());
-                            if expr.0.len() + expr.2.len() > 0 {
-                                panic!()
-                            }
-                            prefixs.push(StringOrExpr::Expr(expr.1))
+                            match root_item.into_inner().next() {
+                                Some(root_item) => {
+                                    let expr = AstExpr::parse_middle_expr(root_item);
+                                    if expr.0.len() + expr.2.len() > 0 {
+                                        panic!()
+                                    }
+                                    prefixs.push(StringOrExpr::OExpr(Some(expr.1)));
+                                }
+                                None => {}
+                            };
                         }
                         _ => unreachable!(),
                     }
@@ -186,7 +197,7 @@ impl AstExpr {
                     }
                     _ => expr = AstOp1Expr::new(expr, op_str, true),
                 },
-                StringOrExpr::Expr(op_expr) => todo!(),
+                StringOrExpr::OExpr(op_expr) => todo!(),
             }
         }
         for suffix_ctx in suffix_ctxs {
@@ -308,6 +319,7 @@ impl AstExpr {
     pub fn get_type(&self) -> AstType {
         match self {
             AstExpr::None => AstType::None,
+            AstExpr::Await(_) => AstType::Future,
             AstExpr::Func(func_expr) => func_expr.func.get_type(),
             AstExpr::Index(_) => AstType::Index,
             AstExpr::Invoke(invoke_expr) => todo!(),

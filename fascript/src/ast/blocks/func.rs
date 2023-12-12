@@ -1,6 +1,5 @@
 use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
-use crate::ast::types::func_type::AstFuncType;
 use crate::ast::types::AstType;
 use crate::ast::ParseExt;
 use crate::ast::PestApiExt;
@@ -28,7 +27,7 @@ impl AstFunc {
     }
 
     pub fn get_type(&self) -> AstType {
-        AstFuncType::new(match self {
+        AstType::Func(match self {
             AstFunc::NativeFunc(nfunc) => nfunc.get_arg_count(),
             AstFunc::FasFunc(func) => func.arg_names.len(),
             AstFunc::FasTask(task) => task.arg_names.len(),

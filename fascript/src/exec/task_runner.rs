@@ -161,6 +161,19 @@ impl TaskRunner {
     pub fn eval_expr(&mut self, expr: AstExpr) -> FasValue {
         match expr {
             AstExpr::None => todo!(),
+            AstExpr::Await(await_expr) => {
+                let value = self.eval_expr(*await_expr.value);
+                match await_expr.wait {
+                    Some(wait) => {
+                        let wait = self.eval_expr(*wait);
+                    }
+                    None => {
+                        //
+                    }
+                };
+                // TODO
+                todo!()
+            }
             AstExpr::Func(func_expr) => FasValue::Func(Box::new(func_expr)),
             AstExpr::Index(_) => unreachable!(),
             AstExpr::Invoke(invoke_expr) => self.eval_func_expr(&invoke_expr),

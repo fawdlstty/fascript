@@ -9,13 +9,8 @@ impl Op2Calc {
         match (left_type, right_type) {
             (AstType::None, _) => todo!(),
             (_, AstType::None) => todo!(),
-            (AstType::Array(a), AstType::Array(b)) if a == b => {
-                let base_type = *a.base_type.clone();
-                Self::calc_array(
-                    left.as_array(base_type.clone()),
-                    op,
-                    right.as_array(base_type.clone()),
-                )
+            (AstType::Array, AstType::Array) => {
+                Self::calc_array(left.as_array(), op, right.as_array())
             }
             (AstType::Bool, AstType::Bool) => Self::calc_bool(left.as_bool(), op, right.as_bool()),
             (AstType::Float, AstType::Float) => {
@@ -30,9 +25,6 @@ impl Op2Calc {
             (AstType::Int, AstType::Int) => Self::calc_int(left.as_int(), op, right.as_int()),
             (AstType::String, AstType::String) => {
                 Self::calc_string(left.as_str(), op, right.as_str())
-            }
-            (AstType::String, AstType::Int) => {
-                Self::calc_string2(left.as_str(), op, right.as_int())
             }
             //AstType::Map(_) => todo!(),
             //AstType::Tuple(_) => todo!(),
@@ -152,13 +144,6 @@ impl Op2Calc {
             "+" => format!("{}{}", left, right),
             "==" => return FasValue::Bool(left == right),
             "!=" => return FasValue::Bool(left != right),
-            _ => unreachable!(),
-        })
-    }
-
-    pub fn calc_string2(left: String, op: &str, right: i64) -> FasValue {
-        FasValue::String(match op {
-            "**" => left.repeat(right as usize),
             _ => unreachable!(),
         })
     }

@@ -1,7 +1,7 @@
 use super::func_expr::AstFuncExpr;
-use crate::ast::types::array_type::AstArrayType;
-use crate::ast::types::map_type::AstMapType;
 use crate::ast::types::AstType;
+use chrono::Duration;
+use chrono::NaiveDateTime;
 use crossbeam::channel;
 use std::collections::HashMap;
 
@@ -15,22 +15,27 @@ pub enum TaskControl {
 
 #[derive(Clone, Debug)]
 pub enum TaskResult {
-    ProgressFeedback(FasValue),
-    Finish(FasValue),
+    Success(Box<FasValue>),
+    Failure(Box<FasValue>),
     Canceled,
-    Rolledback,
+    Rolledbacked,
+}
+
+pub enum TaskReply {
+    TaskResult(TaskResult),
+    TaskProgress(FasValue),
 }
 
 #[derive(Clone, Debug)]
 pub struct TaskValue {
     ctrl_tx: channel::Sender<TaskControl>,
-    result_rx: channel::Receiver<TaskResult>,
+    result_rx: channel::Receiver<TaskReply>,
 }
 
 #[derive(Clone, Debug)]
 pub struct TaskValueShadow {
     ctrl_rx: channel::Receiver<TaskControl>,
-    result_tx: channel::Sender<TaskResult>,
+    result_tx: channel::Sender<TaskReply>,
 }
 
 impl TaskValue {
@@ -46,16 +51,19 @@ impl TaskValue {
 
 #[derive(Clone, Debug)]
 pub enum FasValue {
-    None,
-    Bool(bool),
-    Int(i64),
-    Float(f64),
-    String(String),
     Array(Vec<FasValue>),
-    IMap(HashMap<i64, FasValue>),
-    SMap(HashMap<String, FasValue>),
+    Bool(bool),
+    DateTime(NaiveDateTime),
+    Float(f64),
     Func(Box<AstFuncExpr>),
+    IMap(HashMap<i64, FasValue>),
+    Int(i64),
+    None,
+    SMap(HashMap<String, FasValue>),
+    String(String),
     Task(TaskValue),
+    TaskResult(TaskResult),
+    TimeSpan(Duration),
     //let (tx, rx) = channel::unbounded::<i32>();
 }
 
@@ -80,51 +88,35 @@ impl Eq for FasValue {}
 impl FasValue {
     pub fn get_type(&self) -> AstType {
         match self {
-            FasValue::None => AstType::Void,
+            FasValue::Array(v) => AstType::Array,
             FasValue::Bool(_) => AstType::Bool,
-            FasValue::Int(_) => AstType::Int,
+            FasValue::DateTime(_) => AstType::DateTime,
             FasValue::Float(_) => AstType::Float,
-            FasValue::String(_) => AstType::String,
-            FasValue::Array(v) => {
-                let base_type = match v.first() {
-                    Some(item) => item.get_type(),
-                    None => AstType::None,
-                };
-                AstArrayType::new(base_type)
-            }
-            FasValue::IMap(im) => {
-                let value_type = match im.values().last() {
-                    Some(item) => item.get_type(),
-                    None => AstType::None,
-                };
-                AstMapType::new(AstType::Int, value_type)
-            }
-            FasValue::SMap(sm) => {
-                let value_type = match sm.values().last() {
-                    Some(item) => item.get_type(),
-                    None => AstType::None,
-                };
-                AstMapType::new(AstType::String, value_type)
-            }
             FasValue::Func(f) => f.func.get_type(),
+            FasValue::IMap(im) => AstType::IMap,
+            FasValue::Int(_) => AstType::Int,
+            FasValue::None => AstType::Void,
+            FasValue::SMap(sm) => AstType::SMap,
+            FasValue::String(_) => AstType::String,
             FasValue::Task(_) => AstType::Task,
+            FasValue::TaskResult(_) => AstType::TaskResult,
+            FasValue::TimeSpan(_) => AstType::TimeSpan,
         }
     }
 
     pub fn as_str(&self) -> String {
         match self {
-            FasValue::None => "(null)".to_string(),
-            FasValue::Bool(b) => match b {
-                true => "true".to_string(),
-                false => "false".to_string(),
-            },
-            FasValue::Int(n) => format!("{}", n),
-            FasValue::Float(f) => format!("{:.4}", f),
-            FasValue::String(s) => s.to_string(),
             FasValue::Array(v) => {
                 let items: Vec<String> = v.iter().map(|x| x.as_str()).collect();
                 format!("[ {} ]", items.join(", "))
             }
+            FasValue::Bool(b) => match b {
+                true => "true".to_string(),
+                false => "false".to_string(),
+            },
+            FasValue::DateTime(dt) => todo!(), // TODO
+            FasValue::Float(f) => format!("{:.4}", f),
+            FasValue::Func(_) => "(func)".to_string(),
             FasValue::IMap(im) => {
                 let items: Vec<String> = im
                     .iter()
@@ -132,6 +124,9 @@ impl FasValue {
                     .collect();
                 format!("{{ {} }}", items.join(", "))
             }
+            FasValue::Int(n) => format!("{}", n),
+            FasValue::None => "(null)".to_string(),
+            FasValue::String(s) => s.to_string(),
             FasValue::SMap(sm) => {
                 let items: Vec<String> = sm
                     .iter()
@@ -139,14 +134,15 @@ impl FasValue {
                     .collect();
                 format!("{{ {} }}", items.join(", "))
             }
-            FasValue::Func(_) => "(func)".to_string(),
             FasValue::Task(_) => "(task)".to_string(),
+            FasValue::TaskResult(_) => "(task_result)".to_string(),
+            FasValue::TimeSpan(_) => todo!(), // TODO
         }
     }
 
-    pub fn as_array(&self, base_type: AstType) -> Vec<FasValue> {
+    pub fn as_array(&self) -> Vec<FasValue> {
         match self {
-            FasValue::Array(arr) => arr.iter().map(|x| x.as_type(base_type.clone())).collect(),
+            FasValue::Array(arr) => arr.clone(),
             _ => unreachable!(),
         }
     }
@@ -192,21 +188,22 @@ impl FasValue {
         if self.get_type() != dest_type {
             match dest_type {
                 AstType::None => FasValue::None,
-                AstType::Array(arr_type) => {
-                    let base_type = *arr_type.base_type.clone();
-                    FasValue::Array(self.as_array(base_type))
-                }
+                AstType::Array => FasValue::Array(self.as_array()),
                 AstType::Bool => self.as_bool().into(),
-                AstType::Dynamic => self.clone(),
+                AstType::DateTime => self.clone(),
                 AstType::Float => self.as_float().into(),
                 AstType::Func(_) => todo!(),
+                AstType::Future => todo!(),
                 AstType::Index => unreachable!(),
                 AstType::Int => self.as_int().into(),
-                AstType::Map(_) => todo!(),
+                AstType::IMap => todo!(),
+                AstType::SMap => todo!(),
                 AstType::String => self.as_str().into(),
+                AstType::TimeSpan => self.clone(),
                 AstType::Tuple(_) => todo!(),
                 AstType::Void => FasValue::None,
                 AstType::Task => todo!(),
+                AstType::TaskResult => todo!(),
             }
         } else {
             self.clone()
