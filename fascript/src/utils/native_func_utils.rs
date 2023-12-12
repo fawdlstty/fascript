@@ -18,8 +18,17 @@ pub trait FasToWrapper<T> {
 
 //
 
+macro_rules! calc_arg_count {
+	()=>{
+		0
+	};
+	($id_eat:ident $($id:ident)*) => {
+		1 + calc_arg_count!($($id)*)
+	};
+}
+
 macro_rules! FasWrapper {
-    ($sname:ident $n:expr) => {
+    ($sname:ident) => {
         pub struct $sname<T: Fn() -> R, R>(T, PhantomData<R>);
 
         impl<T, R> FasCallable for $sname<T, R>
@@ -37,7 +46,7 @@ macro_rules! FasWrapper {
                 Box::new(copy)
             }
 
-            fn to_fas_value(self, func_name: String) -> FasValue {
+            fn to_fas_value(self, _func_name: String) -> FasValue {
                 // let native_func = AstNativeFunc {
                 //     ret_type: R::get_ast_type(),
                 //     name: func_name,
@@ -50,7 +59,7 @@ macro_rules! FasWrapper {
             }
 
             fn get_arg_count(&self) -> usize {
-                $n
+                0
             }
         }
 
@@ -66,18 +75,23 @@ macro_rules! FasWrapper {
             }
         }
     };
-    ($sname:ident $n:expr $(, $name1:ident $name2:ident $idx:expr)*) => {
-        pub struct $sname<T: Fn($($name1,)*) -> R, $($name1,)* R>(T, PhantomData<($($name1,)* R)>);
+    ($sname:ident $($name1:ident) *) => {
+        pub struct $sname<T: Fn($($name1),*) -> R, $($name1),*, R>(T, PhantomData<($($name1),*, R)>);
 
-        impl<T, $($name1,)* R> FasCallable for $sname<T, $($name1,)* R>
+        impl<T, $($name1), * ,R> FasCallable for $sname<T, $($name1),*, R>
         where
-            T: Fn($($name1,)*) -> R + Clone + 'static,
-            $($name1: From<FasValue> + GetAstTypeTrait + 'static,)*
+            T: Fn($($name1), *) -> R + Clone + 'static,
+            $($name1: From<FasValue> + GetAstTypeTrait + 'static),*,
             R: Into<FasValue> + GetAstTypeTrait + 'static,
         {
+			#[allow(non_snake_case)]
             fn call(&self, args: Vec<FasValue>) -> FasValue {
-                $(let $name2 = $name1::from(args[$idx].clone());)*
-                let r = (self.0)($($name2,)*);
+				let r = {
+					let mut index = 0;
+					$(let $name1 = $name1::from(args[index].clone());index+=1;)*
+					let _ = index;
+					(self.0)($($name1),*);
+				};
                 r.into()
             }
 
@@ -86,7 +100,7 @@ macro_rules! FasWrapper {
                 Box::new(copy)
             }
 
-            fn to_fas_value(self, func_name: String) -> FasValue {
+            fn to_fas_value(self, _func_name: String) -> FasValue {
                 // let native_func = AstNativeFunc {
                 //     ret_type: R::get_ast_type(),
                 //     name: func_name,
@@ -99,7 +113,7 @@ macro_rules! FasWrapper {
             }
 
             fn get_arg_count(&self) -> usize {
-                $n
+				calc_arg_count!($($name1)*)
             }
         }
 
@@ -118,16 +132,16 @@ macro_rules! FasWrapper {
     };
 }
 
-FasWrapper!(FuncWrapper0 0);
-FasWrapper!(FuncWrapper1 1, T0 t0 0);
-FasWrapper!(FuncWrapper2 2, T0 t0 0, T1 t1 1);
-FasWrapper!(FuncWrapper3 3, T0 t0 0, T1 t1 1, T2 t2 2);
-FasWrapper!(FuncWrapper4 4, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3);
-FasWrapper!(FuncWrapper5 5, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4);
-FasWrapper!(FuncWrapper6 6, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5);
-FasWrapper!(FuncWrapper7 7, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5, T7 t7 7);
-FasWrapper!(FuncWrapper8 8, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5, T7 t7 7, T8 t8 8);
-FasWrapper!(FuncWrapper9 9, T0 t0 0, T1 t1 1, T2 t2 2, T3 t3 3, T4 t4 4, T5 t5 5, T7 t7 7, T8 t8 8, T9 t9 9);
+FasWrapper!(FuncWrapper0);
+FasWrapper!(FuncWrapper1 T0);
+FasWrapper!(FuncWrapper2 T0 T1);
+FasWrapper!(FuncWrapper3 T0 T1 T2);
+FasWrapper!(FuncWrapper4 T0 T1 T2 T3);
+FasWrapper!(FuncWrapper5 T0 T1 T2 T3 T4);
+FasWrapper!(FuncWrapper6 T0 T1 T2 T3 T4 T5);
+FasWrapper!(FuncWrapper7 T0 T1 T2 T3 T4 T5 T7 );
+FasWrapper!(FuncWrapper8 T0 T1 T2 T3 T4 T5 T7 T8);
+FasWrapper!(FuncWrapper9 T0 T1 T2 T3 T4 T5 T7 T8 T9);
 
 //
 
