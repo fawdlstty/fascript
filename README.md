@@ -1,6 +1,6 @@
 # fascript
 
-fascript 脚本语言
+fascript 脚本语言（WIP）
 
 特点：
 

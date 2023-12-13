@@ -1,5 +1,6 @@
 use super::func_expr::AstFuncExpr;
 use crate::ast::types::AstType;
+use crate::utils::time_utils::DurationExt;
 use chrono::Duration;
 use chrono::NaiveDateTime;
 use crossbeam::channel;
@@ -28,14 +29,14 @@ pub enum TaskReply {
 
 #[derive(Clone, Debug)]
 pub struct TaskValue {
-    ctrl_tx: channel::Sender<TaskControl>,
-    result_rx: channel::Receiver<TaskReply>,
+    pub ctrl_tx: channel::Sender<TaskControl>,
+    pub result_rx: channel::Receiver<TaskReply>,
 }
 
 #[derive(Clone, Debug)]
 pub struct TaskValueShadow {
-    ctrl_rx: channel::Receiver<TaskControl>,
-    result_tx: channel::Sender<TaskReply>,
+    pub ctrl_rx: channel::Receiver<TaskControl>,
+    pub result_tx: channel::Sender<TaskReply>,
 }
 
 impl TaskValue {
@@ -64,8 +65,9 @@ pub enum FasValue {
     Task(TaskValue),
     TaskResult(TaskResult),
     TimeSpan(Duration),
-    //let (tx, rx) = channel::unbounded::<i32>();
 }
+
+unsafe impl Send for FasValue {}
 
 impl PartialEq for FasValue {
     fn eq(&self, other: &Self) -> bool {
@@ -114,7 +116,7 @@ impl FasValue {
                 true => "true".to_string(),
                 false => "false".to_string(),
             },
-            FasValue::DateTime(dt) => todo!(), // TODO
+            FasValue::DateTime(dt) => dt.format("%Y-%m-%d %H:%M:%S").to_string(),
             FasValue::Float(f) => format!("{:.4}", f),
             FasValue::Func(_) => "(func)".to_string(),
             FasValue::IMap(im) => {
@@ -136,7 +138,7 @@ impl FasValue {
             }
             FasValue::Task(_) => "(task)".to_string(),
             FasValue::TaskResult(_) => "(task_result)".to_string(),
-            FasValue::TimeSpan(_) => todo!(), // TODO
+            FasValue::TimeSpan(ts) => ts.format(),
         }
     }
 
@@ -180,6 +182,34 @@ impl FasValue {
     pub fn as_smap(&self) -> HashMap<String, FasValue> {
         match self {
             FasValue::SMap(map) => map.clone(),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn as_datetime(&self) -> NaiveDateTime {
+        match self {
+            FasValue::DateTime(dt) => dt.clone(),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn as_task(self) -> TaskValue {
+        match self {
+            FasValue::Task(t) => t,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn as_taskresult(self) -> TaskResult {
+        match self {
+            FasValue::TaskResult(tr) => tr,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn as_timespan(&self) -> Duration {
+        match self {
+            FasValue::TimeSpan(ts) => ts.clone(),
             _ => unreachable!(),
         }
     }

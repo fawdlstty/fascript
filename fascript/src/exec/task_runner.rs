@@ -1,3 +1,5 @@
+use chrono::NaiveDateTime;
+
 use super::op2_calc::Op2Calc;
 use super::runtime_base::RuntimeBase;
 use super::runtime_base::Variables;
@@ -8,11 +10,13 @@ use crate::ast::exprs::invoke_expr::AstInvokeExpr;
 use crate::ast::exprs::op1_expr::AstOp1Expr;
 use crate::ast::exprs::op2_expr::AstOp2Expr;
 use crate::ast::exprs::value_expr::FasValue;
+use crate::ast::exprs::value_expr::TaskReply;
 use crate::ast::exprs::value_expr::TaskValue;
 use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
 use crate::ast::types::AstType;
 use crate::utils::oper_utils::OperUtils;
+use crate::utils::time_utils::NaiveDateTimeExt;
 
 macro_rules! process_loop_ctrl {
     ($self:expr, $stmt:expr) => {
@@ -59,7 +63,7 @@ impl TaskRunner {
         }
     }
 
-    pub fn eval_stmt(&mut self, stmt: AstStmt) {
+    pub async fn eval_stmt(&mut self, stmt: AstStmt) {
         if self.loop_ctrl != LoopControl::None {
             return;
         }
@@ -73,7 +77,7 @@ impl TaskRunner {
             }
             AstStmt::DefVar(def_stmt) => {
                 for def_item in def_stmt.def_vars {
-                    let var_value = self.eval_expr(def_item.init_value.clone());
+                    let var_value = self.eval_expr(def_item.init_value.clone()).await;
                     self.set_var(def_item.var_name.clone(), var_value);
                 }
             }
@@ -83,13 +87,16 @@ impl TaskRunner {
                 process_loop_ctrl!(self, do_while_stmt);
                 self.sub_level();
                 //
-                let cond_expr = self.eval_expr(do_while_stmt.cond_expr.clone()).as_bool();
+                let cond_expr = self
+                    .eval_expr(do_while_stmt.cond_expr.clone())
+                    .await
+                    .as_bool();
                 if !cond_expr {
                     break;
                 }
             },
             AstStmt::Expr(expr) => {
-                let ret = self.eval_expr(expr);
+                let ret = self.eval_expr(expr).await;
                 if self.stack.len() == 0 {
                     self.ret_value = Some(ret);
                 }
@@ -100,12 +107,12 @@ impl TaskRunner {
                         Some(left) => *left,
                         None => todo!(),
                     };
-                    let left = self.eval_expr(left).as_int();
+                    let left = self.eval_expr(left).await.as_int();
                     let right = match index_expr.right {
                         Some(right) => *right,
                         None => todo!(),
                     };
-                    let right = self.eval_expr(right).as_int();
+                    let right = self.eval_expr(right).await.as_int();
                     //
                     for i in left..right {
                         self.add_level();
@@ -120,7 +127,7 @@ impl TaskRunner {
             AstStmt::If(if_stmt) => {
                 let mut is_cond = false;
                 for (index, cond_expr) in if_stmt.con_exprs.iter().enumerate() {
-                    let cond = self.eval_expr(cond_expr.clone()).as_bool();
+                    let cond = self.eval_expr(cond_expr.clone()).await.as_bool();
                     if cond {
                         is_cond = true;
                         self.eval_stmts(if_stmt.stmtss[index].clone());
@@ -132,11 +139,11 @@ impl TaskRunner {
                 }
             }
             AstStmt::Return(expr) => {
-                self.ret_value = Some(self.eval_expr(expr));
+                self.ret_value = Some(self.eval_expr(expr).await);
                 self.loop_ctrl = LoopControl::Return;
             }
             AstStmt::While(while_stmt) => loop {
-                let cond_expr = self.eval_expr(while_stmt.cond_expr.clone()).as_bool();
+                let cond_expr = self.eval_expr(while_stmt.cond_expr.clone()).await.as_bool();
                 if !cond_expr {
                     break;
                 }
@@ -158,17 +165,36 @@ impl TaskRunner {
         }
     }
 
-    pub fn eval_expr(&mut self, expr: AstExpr) -> FasValue {
+    pub async fn eval_expr(&mut self, expr: AstExpr) -> FasValue {
         match expr {
-            AstExpr::None => todo!(),
+            AstExpr::None => FasValue::None,
             AstExpr::Await(await_expr) => {
-                let value = self.eval_expr(*await_expr.value);
+                let task = self.eval_expr(*await_expr.value).await.as_task();
                 match await_expr.wait {
                     Some(wait) => {
-                        let wait = self.eval_expr(*wait);
+                        let wait = self.eval_expr(*wait).await;
+                        let ts = wait.as_timespan();
+                        let dest_time = NaiveDateTime::now() + ts;
+                        while NaiveDateTime::now() < dest_time {
+                            match task.result_rx.try_recv() {
+                                Ok(TaskReply::TaskResult(result)) => {
+                                    // TODO
+                                    todo!()
+                                }
+                                Ok(TaskReply::TaskProgress(step)) => {
+                                    // TODO
+                                    todo!()
+                                }
+                                Err(_) => {
+                                    tokio::task::yield_now().await;
+                                }
+                            }
+                        }
                     }
                     None => {
-                        //
+                        loop {
+                            //
+                        }
                     }
                 };
                 // TODO
@@ -176,26 +202,30 @@ impl TaskRunner {
             }
             AstExpr::Func(func_expr) => FasValue::Func(Box::new(func_expr)),
             AstExpr::Index(_) => unreachable!(),
-            AstExpr::Invoke(invoke_expr) => self.eval_func_expr(&invoke_expr),
-            AstExpr::Op1(op1_expr) => self.eval_op1_expr(&op1_expr),
-            AstExpr::Op2(op2_expr) => self.eval_op2_expr(&op2_expr),
+            AstExpr::Invoke(invoke_expr) => self.eval_func_expr(&invoke_expr).await,
+            AstExpr::Op1(op1_expr) => self.eval_op1_expr(&op1_expr).await,
+            AstExpr::Op2(op2_expr) => self.eval_op2_expr(&op2_expr).await,
             AstExpr::Switch(_) => todo!(),
             AstExpr::Temp(temp_expr) => self.get_var(&temp_expr.name).unwrap_or(FasValue::None),
             AstExpr::TypeWrap(_) => todo!(),
             AstExpr::Value(val) => val,
-        }
-    }
-
-    fn eval_func_expr(&mut self, invoke_expr: &AstInvokeExpr) -> FasValue {
-        let func: FasValue = self.eval_expr(*invoke_expr.func.clone());
-        match func {
-            FasValue::Func(func) => self.invoke_func(*func.func, invoke_expr.arguments.clone()),
             _ => todo!(),
         }
     }
 
-    fn eval_op1_expr(&mut self, op1_expr: &AstOp1Expr) -> FasValue {
-        let left = self.eval_expr(*op1_expr.left.clone());
+    async fn eval_func_expr(&mut self, invoke_expr: &AstInvokeExpr) -> FasValue {
+        let func: FasValue = self.eval_expr(*invoke_expr.func.clone()).await;
+        match func {
+            FasValue::Func(func) => {
+                self.invoke_func(*func.func, invoke_expr.arguments.clone())
+                    .await
+            }
+            _ => todo!(),
+        }
+    }
+
+    async fn eval_op1_expr(&mut self, op1_expr: &AstOp1Expr) -> FasValue {
+        let left = self.eval_expr(*op1_expr.left.clone()).await;
         match op1_expr.is_prefix {
             true => match &op1_expr.op[..] {
                 "-" => match left.get_type() {
@@ -222,7 +252,7 @@ impl TaskRunner {
         }
     }
 
-    fn eval_op2_expr(&mut self, op2_expr: &AstOp2Expr) -> FasValue {
+    async fn eval_op2_expr(&mut self, op2_expr: &AstOp2Expr) -> FasValue {
         let op = &op2_expr.op[..];
         if OperUtils::is_assign_op2(op) {
             if op == "=" {
@@ -230,7 +260,7 @@ impl TaskRunner {
                     AstExpr::Temp(temp_expr) => temp_expr.name.clone(),
                     _ => unreachable!(),
                 };
-                let mut value = self.eval_expr(*op2_expr.right.clone());
+                let mut value = self.eval_expr(*op2_expr.right.clone()).await;
                 self.set_var(left_name, value);
                 FasValue::None
             } else {
@@ -242,23 +272,28 @@ impl TaskRunner {
                 let tmp_op2 = AstOp2Expr::new(
                     *op2_expr.left.clone(),
                     "=".to_string(),
-                    AstExpr::Value(self.eval_expr(tmp_op2)),
+                    AstExpr::Value(self.eval_expr(tmp_op2).await),
                 );
-                self.eval_expr(tmp_op2)
+                self.eval_expr(tmp_op2).await
             }
         } else if OperUtils::is_calc_op2(op) {
-            let left_expr = self.eval_expr(*op2_expr.left.clone());
-            let right_expr = self.eval_expr(*op2_expr.right.clone());
+            let left_expr = self.eval_expr(*op2_expr.left.clone()).await;
+            let right_expr = self.eval_expr(*op2_expr.right.clone()).await;
             Op2Calc::calc(left_expr, op, right_expr)
         } else {
             todo!()
         }
     }
 
-    pub fn invoke_func(&mut self, func: AstFunc, args: Vec<AstExpr>) -> FasValue {
+    pub async fn invoke_func(&mut self, func: AstFunc, args: Vec<AstExpr>) -> FasValue {
         match func {
             AstFunc::NativeFunc(func) => {
-                func.call(args.into_iter().map(|x| self.eval_expr(x)).collect())
+                let mut new_args = vec![];
+                for arg in args {
+                    new_args.push(self.eval_expr(arg).await);
+                }
+                func.call(new_args)
+                //func.call(args.into_iter().map(|x| self.eval_expr(x).await).collect())
             }
             AstFunc::FasFunc(func) => self.call_fas_func(&func, &args),
             AstFunc::FasTask(task) => {
@@ -314,10 +349,10 @@ impl TaskRunner {
             .push(Variables::new(VariablesType::IndentVariables));
     }
 
-    fn add_level_invoke(&mut self, func: &FasFunc, args: &Vec<AstExpr>) {
+    async fn add_level_invoke(&mut self, func: &FasFunc, args: &Vec<AstExpr>) {
         let mut variables = Variables::new(VariablesType::InvokeArguments);
         for (idx, var_name) in func.arg_names.iter().enumerate() {
-            let value = self.eval_expr(args[idx].clone());
+            let value = self.eval_expr(args[idx].clone()).await;
             variables.set_var(var_name.clone(), value);
         }
         self.stack.push(variables);
