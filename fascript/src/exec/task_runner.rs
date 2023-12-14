@@ -1,11 +1,10 @@
-use chrono::NaiveDateTime;
-
 use super::op2_calc::Op2Calc;
 use super::runtime_base::RuntimeBase;
 use super::runtime_base::Variables;
 use super::runtime_base::VariablesType;
 use crate::ast::blocks::func::AstFunc;
 use crate::ast::blocks::func::FasFunc;
+use crate::ast::blocks::func::FasTask;
 use crate::ast::exprs::invoke_expr::AstInvokeExpr;
 use crate::ast::exprs::op1_expr::AstOp1Expr;
 use crate::ast::exprs::op2_expr::AstOp2Expr;
@@ -17,6 +16,8 @@ use crate::ast::stmts::AstStmt;
 use crate::ast::types::AstType;
 use crate::utils::oper_utils::OperUtils;
 use crate::utils::time_utils::NaiveDateTimeExt;
+use async_recursion::async_recursion;
+use chrono::NaiveDateTime;
 
 macro_rules! process_loop_ctrl {
     ($self:expr, $stmt:expr) => {
@@ -63,6 +64,7 @@ impl TaskRunner {
         }
     }
 
+    #[async_recursion]
     pub async fn eval_stmt(&mut self, stmt: AstStmt) {
         if self.loop_ctrl != LoopControl::None {
             return;
@@ -83,7 +85,7 @@ impl TaskRunner {
             }
             AstStmt::DoWhile(do_while_stmt) => loop {
                 self.add_level();
-                self.eval_stmts(do_while_stmt.stmts.clone());
+                self.eval_stmts(do_while_stmt.stmts.clone()).await;
                 process_loop_ctrl!(self, do_while_stmt);
                 self.sub_level();
                 //
@@ -117,7 +119,7 @@ impl TaskRunner {
                     for i in left..right {
                         self.add_level();
                         self.set_var(for_stmt.iter_name.clone(), FasValue::Int(i));
-                        self.eval_stmts(for_stmt.stmts.clone());
+                        self.eval_stmts(for_stmt.stmts.clone()).await;
                         process_loop_ctrl!(self, for_stmt);
                         self.sub_level();
                     }
@@ -130,12 +132,13 @@ impl TaskRunner {
                     let cond = self.eval_expr(cond_expr.clone()).await.as_bool();
                     if cond {
                         is_cond = true;
-                        self.eval_stmts(if_stmt.stmtss[index].clone());
+                        self.eval_stmts(if_stmt.stmtss[index].clone()).await;
                         break;
                     }
                 }
                 if !is_cond && if_stmt.stmtss.len() > if_stmt.con_exprs.len() {
-                    self.eval_stmts(if_stmt.stmtss.last().unwrap().clone());
+                    self.eval_stmts(if_stmt.stmtss.last().unwrap().clone())
+                        .await;
                 }
             }
             AstStmt::Return(expr) => {
@@ -149,56 +152,51 @@ impl TaskRunner {
                 }
                 //
                 self.add_level();
-                self.eval_stmts(while_stmt.stmts.clone());
+                self.eval_stmts(while_stmt.stmts.clone()).await;
                 process_loop_ctrl!(self, while_stmt);
                 self.sub_level();
             },
         }
     }
 
-    pub fn eval_stmts(&mut self, stmts: Vec<AstStmt>) {
+    pub async fn eval_stmts(&mut self, stmts: Vec<AstStmt>) {
         for stmt in stmts {
-            self.eval_stmt(stmt);
+            self.eval_stmt(stmt).await;
             if self.ret_value.is_some() {
                 break;
             }
         }
     }
 
+    #[async_recursion]
     pub async fn eval_expr(&mut self, expr: AstExpr) -> FasValue {
         match expr {
             AstExpr::None => FasValue::None,
             AstExpr::Await(await_expr) => {
                 let task = self.eval_expr(*await_expr.value).await.as_task();
-                match await_expr.wait {
+                let fin = match await_expr.wait {
                     Some(wait) => {
-                        let wait = self.eval_expr(*wait).await;
-                        let ts = wait.as_timespan();
-                        let dest_time = NaiveDateTime::now() + ts;
-                        while NaiveDateTime::now() < dest_time {
-                            match task.result_rx.try_recv() {
-                                Ok(TaskReply::TaskResult(result)) => {
-                                    // TODO
-                                    todo!()
-                                }
-                                Ok(TaskReply::TaskProgress(step)) => {
-                                    // TODO
-                                    todo!()
-                                }
-                                Err(_) => {
-                                    tokio::task::yield_now().await;
-                                }
-                            }
-                        }
+                        Some(NaiveDateTime::now() + self.eval_expr(*wait).await.as_timespan())
                     }
-                    None => {
-                        loop {
-                            //
-                        }
-                    }
+                    None => None,
                 };
-                // TODO
-                todo!()
+                let check_continue = move || match fin {
+                    Some(dest_time) => NaiveDateTime::now() < dest_time,
+                    None => true,
+                };
+                while check_continue() {
+                    match task.result_rx.try_recv() {
+                        Ok(TaskReply::TaskResult(result)) => return FasValue::TaskResult(result),
+                        Ok(TaskReply::TaskProgress(step)) => {
+                            // TODO
+                            todo!()
+                        }
+                        Err(_) => {
+                            tokio::task::yield_now().await;
+                        }
+                    }
+                }
+                FasValue::None
             }
             AstExpr::Func(func_expr) => FasValue::Func(Box::new(func_expr)),
             AstExpr::Index(_) => unreachable!(),
@@ -209,7 +207,6 @@ impl TaskRunner {
             AstExpr::Temp(temp_expr) => self.get_var(&temp_expr.name).unwrap_or(FasValue::None),
             AstExpr::TypeWrap(_) => todo!(),
             AstExpr::Value(val) => val,
-            _ => todo!(),
         }
     }
 
@@ -217,7 +214,7 @@ impl TaskRunner {
         let func: FasValue = self.eval_expr(*invoke_expr.func.clone()).await;
         match func {
             FasValue::Func(func) => {
-                self.invoke_func(*func.func, invoke_expr.arguments.clone())
+                self.call_func(*func.func, invoke_expr.arguments.clone())
                     .await
             }
             _ => todo!(),
@@ -260,7 +257,7 @@ impl TaskRunner {
                     AstExpr::Temp(temp_expr) => temp_expr.name.clone(),
                     _ => unreachable!(),
                 };
-                let mut value = self.eval_expr(*op2_expr.right.clone()).await;
+                let value = self.eval_expr(*op2_expr.right.clone()).await;
                 self.set_var(left_name, value);
                 FasValue::None
             } else {
@@ -285,49 +282,50 @@ impl TaskRunner {
         }
     }
 
-    pub async fn invoke_func(&mut self, func: AstFunc, args: Vec<AstExpr>) -> FasValue {
+    pub async fn call_func(&mut self, func: AstFunc, args: Vec<AstExpr>) -> FasValue {
+        let mut new_args = vec![];
+        for arg in args {
+            new_args.push(self.eval_expr(arg).await);
+        }
         match func {
-            AstFunc::NativeFunc(func) => {
-                let mut new_args = vec![];
-                for arg in args {
-                    new_args.push(self.eval_expr(arg).await);
-                }
-                func.call(new_args)
-                //func.call(args.into_iter().map(|x| self.eval_expr(x).await).collect())
-            }
-            AstFunc::FasFunc(func) => self.call_fas_func(&func, &args),
-            AstFunc::FasTask(task) => {
-                let (ret, shadow) = TaskValue::create();
-                let task = task.clone();
-                let base2 = self.base.clone();
-                tokio::spawn(async move {
-                    let runner = TaskRunner::new(base2);
-
-                    // let mut ret = FasValue::None;
-                    // let loop_ctrl = self.loop_ctrl.clone();
-                    // self.loop_ctrl = LoopControl::None;
-                    // self.add_level_invoke(&func, &args);
-                    // self.eval_stmts(func.body_stmts.clone());
-                    // if self.ret_value.is_some() {
-                    //     let mut ret_value = None;
-                    //     std::mem::swap(&mut ret_value, &mut self.ret_value);
-                    //     ret = ret_value.unwrap();
-                    // }
-                    // self.sub_level();
-                    // self.loop_ctrl = loop_ctrl;
-                    // ret
-                });
-                FasValue::Task(ret)
-            }
+            AstFunc::NativeFunc(func) => func.call(new_args),
+            AstFunc::FasFunc(func) => self.call_fas_func(func, new_args).await,
+            AstFunc::FasTask(task) => self.call_fas_task(task, new_args).await,
         }
     }
 
-    pub fn call_fas_func(&mut self, func: &FasFunc, args: &Vec<AstExpr>) -> FasValue {
+    pub async fn call_fas_task(&mut self, task: FasTask, args: Vec<FasValue>) -> FasValue {
+        let (ret, shadow) = TaskValue::create();
+        let task = task.clone();
+        let base2 = self.base.clone();
+        tokio::spawn(async move {
+            let runner = TaskRunner::new(base2);
+
+            // let mut ret = FasValue::None;
+            // let loop_ctrl = self.loop_ctrl.clone();
+            // self.loop_ctrl = LoopControl::None;
+            // self.add_level_invoke(&func, &args);
+            // self.eval_stmts(func.body_stmts.clone());
+            // if self.ret_value.is_some() {
+            //     let mut ret_value = None;
+            //     std::mem::swap(&mut ret_value, &mut self.ret_value);
+            //     ret = ret_value.unwrap();
+            // }
+            // self.sub_level();
+            // self.loop_ctrl = loop_ctrl;
+            // ret
+            todo!()
+        });
+        todo!();
+        FasValue::Task(ret)
+    }
+
+    pub async fn call_fas_func(&mut self, func: FasFunc, args: Vec<FasValue>) -> FasValue {
         let mut ret = FasValue::None;
         let loop_ctrl = self.loop_ctrl.clone();
         self.loop_ctrl = LoopControl::None;
-        self.add_level_invoke(&func, &args);
-        self.eval_stmts(func.body_stmts.clone());
+        self.add_level_invoke(&func, args).await;
+        self.eval_stmts(func.body_stmts.clone()).await;
         if self.ret_value.is_some() {
             let mut ret_value = None;
             std::mem::swap(&mut ret_value, &mut self.ret_value);
@@ -349,11 +347,10 @@ impl TaskRunner {
             .push(Variables::new(VariablesType::IndentVariables));
     }
 
-    async fn add_level_invoke(&mut self, func: &FasFunc, args: &Vec<AstExpr>) {
+    async fn add_level_invoke(&mut self, func: &FasFunc, mut args: Vec<FasValue>) {
         let mut variables = Variables::new(VariablesType::InvokeArguments);
-        for (idx, var_name) in func.arg_names.iter().enumerate() {
-            let value = self.eval_expr(args[idx].clone()).await;
-            variables.set_var(var_name.clone(), value);
+        for var_name in func.arg_names.iter() {
+            variables.set_var(var_name.clone(), args.remove(0));
         }
         self.stack.push(variables);
         self.stack
@@ -369,7 +366,7 @@ impl TaskRunner {
         }
     }
 
-    fn set_var(&mut self, var_name: String, mut var_value: FasValue) {
+    fn set_var(&mut self, var_name: String, var_value: FasValue) {
         let ret = match self.stack.last_mut() {
             Some(bindings) => bindings.set_var(var_name, var_value),
             None => self.base.set_var(var_name, var_value),
@@ -389,7 +386,7 @@ impl TaskRunner {
         self.base.get_var(var_name)
     }
 
-    pub fn set_global_value(&mut self, name: String, mut value: FasValue) {
+    pub fn set_global_value(&mut self, name: String, value: FasValue) {
         self.base.set_var(name, value);
     }
 }

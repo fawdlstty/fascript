@@ -33,7 +33,7 @@ impl FasRuntime {
             }
         };
         for stmt in stmts {
-            self.runner.eval_stmt(stmt);
+            self.runner.eval_stmt(stmt).await;
         }
         self.runner.get_return_value()
     }

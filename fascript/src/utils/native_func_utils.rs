@@ -4,7 +4,7 @@ use crate::ast::exprs::value_expr::{FasValue, GetAstTypeTrait};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-pub trait FasCallable {
+pub trait FasCallable: Send + Sync {
     fn call(&self, args: Vec<FasValue>) -> FasValue;
     fn clone_(&self) -> Box<dyn FasCallable + 'static>;
     fn to_fas_value(self, func_name: String) -> FasValue;
@@ -33,8 +33,8 @@ macro_rules! FasWrapper {
 
         impl<T, R> FasCallable for $sname<T, R>
         where
-            T: Fn() -> R + Clone + 'static,
-            R: Into<FasValue> + GetAstTypeTrait + 'static,
+            T: Fn() -> R + Clone + Send + Sync + 'static,
+            R: Into<FasValue> + GetAstTypeTrait + Send + Sync + 'static,
         {
             fn call(&self, _args: Vec<FasValue>) -> FasValue {
                 let r = (self.0)();
@@ -65,8 +65,8 @@ macro_rules! FasWrapper {
 
         impl<T, R> FasToWrapper<R> for T
         where
-            T: Fn() -> R + Clone + 'static,
-            R: Into<FasValue> + GetAstTypeTrait + 'static,
+            T: Fn() -> R + Clone + Send + Sync + 'static,
+            R: Into<FasValue> + GetAstTypeTrait + Send + Sync + 'static,
         {
             type Output = $sname<T,  R>;
 
@@ -80,9 +80,9 @@ macro_rules! FasWrapper {
 
         impl<T, $($name1), * ,R> FasCallable for $sname<T, $($name1),*, R>
         where
-            T: Fn($($name1), *) -> R + Clone + 'static,
-            $($name1: From<FasValue> + GetAstTypeTrait + 'static),*,
-            R: Into<FasValue> + GetAstTypeTrait + 'static,
+            T: Fn($($name1), *) -> R + Clone + Send + Sync + 'static,
+            $($name1: From<FasValue> + GetAstTypeTrait + Send + Sync + 'static),*,
+            R: Into<FasValue> + GetAstTypeTrait + Send + Sync + 'static,
         {
 			#[allow(non_snake_case)]
             fn call(&self, args: Vec<FasValue>) -> FasValue {
@@ -119,9 +119,9 @@ macro_rules! FasWrapper {
 
         impl<T, $($name1,)* R> FasToWrapper<($($name1,)* R)> for T
         where
-            T: Fn($($name1,)*) -> R + Clone + 'static,
-            $($name1: From<FasValue> + GetAstTypeTrait + 'static,)*
-            R: Into<FasValue> + GetAstTypeTrait + 'static,
+            T: Fn($($name1,)*) -> R + Clone + Send + Sync + 'static,
+            $($name1: From<FasValue> + GetAstTypeTrait + Send + Sync + 'static,)*
+            R: Into<FasValue> + GetAstTypeTrait + Send + Sync + 'static,
         {
             type Output = $sname<T, $($name1,)* R>;
 

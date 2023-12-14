@@ -65,8 +65,6 @@ impl AstExpr {
     }
 
     fn parse_op3_expr(root: pest::iterators::Pair<'_, Rule>) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
-        let mut pre_stmts = vec![];
-        let mut post_stmts = vec![];
         let mut exprs = vec![];
         for root_item in root.into_inner() {
             match root_item.as_rule() {
@@ -88,7 +86,7 @@ impl AstExpr {
             ],
             values: exprs,
         });
-        (pre_stmts, expr, post_stmts)
+        (vec![], expr, vec![])
     }
 
     fn parse_op2_expr(root: pest::iterators::Pair<'_, Rule>) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
