@@ -5,11 +5,13 @@ use super::runtime_base::VariablesType;
 use crate::ast::blocks::func::AstFunc;
 use crate::ast::blocks::func::FasFunc;
 use crate::ast::blocks::func::FasTask;
+use crate::ast::exprs::fail_expr;
 use crate::ast::exprs::invoke_expr::AstInvokeExpr;
 use crate::ast::exprs::op1_expr::AstOp1Expr;
 use crate::ast::exprs::op2_expr::AstOp2Expr;
 use crate::ast::exprs::value_expr::FasValue;
 use crate::ast::exprs::value_expr::TaskReply;
+use crate::ast::exprs::value_expr::TaskResult;
 use crate::ast::exprs::value_expr::TaskValue;
 use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
@@ -198,11 +200,19 @@ impl TaskRunner {
                 }
                 FasValue::None
             }
+            AstExpr::Fail(fail_expr) => {
+                let fail_expr = self.eval_expr(*fail_expr.value).await;
+                self.ret_value = Some(FasValue::TaskResult(TaskResult::Failure(Box::new(
+                    fail_expr,
+                ))));
+                FasValue::None
+            }
             AstExpr::Func(func_expr) => FasValue::Func(Box::new(func_expr)),
             AstExpr::Index(_) => unreachable!(),
             AstExpr::Invoke(invoke_expr) => self.eval_func_expr(&invoke_expr).await,
             AstExpr::Op1(op1_expr) => self.eval_op1_expr(&op1_expr).await,
             AstExpr::Op2(op2_expr) => self.eval_op2_expr(&op2_expr).await,
+            AstExpr::Report(_) => panic!(),
             AstExpr::Switch(_) => todo!(),
             AstExpr::Temp(temp_expr) => self.get_var(&temp_expr.name).unwrap_or(FasValue::None),
             AstExpr::TypeWrap(_) => todo!(),
@@ -299,24 +309,26 @@ impl TaskRunner {
         let task = task.clone();
         let base2 = self.base.clone();
         tokio::spawn(async move {
-            let runner = TaskRunner::new(base2);
-
-            // let mut ret = FasValue::None;
-            // let loop_ctrl = self.loop_ctrl.clone();
-            // self.loop_ctrl = LoopControl::None;
-            // self.add_level_invoke(&func, &args);
-            // self.eval_stmts(func.body_stmts.clone());
-            // if self.ret_value.is_some() {
-            //     let mut ret_value = None;
-            //     std::mem::swap(&mut ret_value, &mut self.ret_value);
-            //     ret = ret_value.unwrap();
-            // }
-            // self.sub_level();
-            // self.loop_ctrl = loop_ctrl;
-            // ret
+            let mut runner = TaskRunner::new(base2);
+            let mut ret = FasValue::None;
+            let loop_ctrl = runner.loop_ctrl.clone();
+            runner.loop_ctrl = LoopControl::None;
+            runner.add_level_invoke(&task.arg_names, args);
+            // TODO 传递shadow或存类里
+            panic!();
+            runner.eval_stmts(task.body_stmts.clone());
+            if runner.ret_value.is_some() {
+                let mut ret_value = None;
+                std::mem::swap(&mut ret_value, &mut runner.ret_value);
+                ret = ret_value.unwrap();
+            }
+            runner.sub_level();
+            runner.loop_ctrl = loop_ctrl;
+            _ = shadow
+                .result_tx
+                .send(TaskReply::TaskResult(TaskResult::Success(Box::new(ret))));
             todo!()
         });
-        todo!();
         FasValue::Task(ret)
     }
 
@@ -324,7 +336,7 @@ impl TaskRunner {
         let mut ret = FasValue::None;
         let loop_ctrl = self.loop_ctrl.clone();
         self.loop_ctrl = LoopControl::None;
-        self.add_level_invoke(&func, args).await;
+        self.add_level_invoke(&func.arg_names, args).await;
         self.eval_stmts(func.body_stmts.clone()).await;
         if self.ret_value.is_some() {
             let mut ret_value = None;
@@ -347,9 +359,9 @@ impl TaskRunner {
             .push(Variables::new(VariablesType::IndentVariables));
     }
 
-    async fn add_level_invoke(&mut self, func: &FasFunc, mut args: Vec<FasValue>) {
+    async fn add_level_invoke(&mut self, arg_names: &Vec<String>, mut args: Vec<FasValue>) {
         let mut variables = Variables::new(VariablesType::InvokeArguments);
-        for var_name in func.arg_names.iter() {
+        for var_name in arg_names {
             variables.set_var(var_name.clone(), args.remove(0));
         }
         self.stack.push(variables);
