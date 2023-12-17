@@ -5,6 +5,7 @@ use crate::ast::ParseExt;
 use crate::ast::PestApiExt;
 use crate::ast::Rule;
 use crate::FasCallable;
+use chrono::Duration;
 use std::fmt::Debug;
 
 pub enum AstFunc {
@@ -93,7 +94,7 @@ impl ParseExt for FasFunc {
 
 #[derive(Clone, Debug)]
 pub struct FasTask {
-    pub annotations: Vec<AstAnnoPart>,
+    pub annos: AstAnnoParts,
     pub name: String,
     pub arg_names: Vec<String>,
     pub body_stmts: Vec<AstStmt>,
@@ -102,14 +103,14 @@ pub struct FasTask {
 impl ParseExt for FasTask {
     fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let mut _func = FasTask {
-            annotations: vec![],
+            annos: AstAnnoParts::new(),
             name: "".to_string(),
             arg_names: vec![],
             body_stmts: vec![],
         };
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::AnnoPart => _func.annotations.push(AstAnnoPart::parse(root_item)),
+                Rule::AnnoPart => _func.annos.push(AstAnnoPart::parse(root_item)),
                 Rule::Id => _func.name = root_item.get_id(),
                 Rule::Args => _func.arg_names = root_item.get_ids(),
                 Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
@@ -159,8 +160,6 @@ impl ParseExt for AstAnnoPart {
     }
 }
 
-// unsafe impl Send for FasFunc {}
-
 impl FasFunc {
     pub fn parse_lambda(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let mut _func = FasFunc {
@@ -179,5 +178,70 @@ impl FasFunc {
             }
         }
         _func
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct AstAnnoParts {
+    pub annos: Vec<AstAnnoPart>,
+}
+
+unsafe impl Send for AstAnnoParts {}
+
+impl AstAnnoParts {
+    pub fn new() -> AstAnnoParts {
+        AstAnnoParts { annos: vec![] }
+    }
+
+    pub fn push(&mut self, anno: AstAnnoPart) {
+        self.annos.push(anno);
+    }
+
+    pub fn get_cancel_expr(&mut self) -> Option<AstExpr> {
+        for anno in self.annos.iter() {
+            if &anno.anno_type == "on_cancel" {
+                return Some(anno.anno_expr.clone());
+            }
+        }
+        None
+    }
+
+    pub fn get_rollback_expr(&mut self) -> Option<AstExpr> {
+        for anno in self.annos.iter() {
+            if &anno.anno_type == "on_rollback" {
+                return Some(anno.anno_expr.clone());
+            }
+        }
+        None
+    }
+
+    pub fn get_abort_expr(&mut self) -> AbortProc {
+        let mut proc = AbortProc::new();
+        for anno in self.annos.iter_mut() {
+            if &anno.anno_type == "on_abort" {
+                proc.on_abort = Some(anno.anno_expr.clone());
+            } else if &anno.anno_type == "on_abort_retry_count" {
+                proc.retry_count = Some(anno.anno_expr.clone());
+            } else if &anno.anno_type == "on_abort_retry_interval" {
+                proc.retry_interval = Some(anno.anno_expr.clone());
+            }
+        }
+        proc
+    }
+}
+
+pub struct AbortProc {
+    pub retry_count: Option<AstExpr>,
+    pub retry_interval: Option<AstExpr>,
+    pub on_abort: Option<AstExpr>,
+}
+
+impl AbortProc {
+    pub fn new() -> AbortProc {
+        AbortProc {
+            retry_count: None,
+            retry_interval: None,
+            on_abort: None,
+        }
     }
 }

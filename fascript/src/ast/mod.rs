@@ -2,7 +2,8 @@ pub mod blocks;
 pub mod exprs;
 pub mod stmts;
 pub mod types;
-use self::{stmts::AstStmt, types::AstType};
+
+use self::stmts::AstStmt;
 pub use pest::Parser;
 pub use pest_derive::Parser;
 

@@ -48,7 +48,7 @@ QuotExpr                  = { QYUAN_L ~ Expr ~ QYUAN_R }
 ArrayExpr                 = { QFANG_L ~ (IndexExpr | Expr) ~ QFANG_R }
 BaseExpr                  = { Literal | NewExpr | LambdaExpr | TupleExpr | QuotExpr | Id | ArrayExpr }
 BaseExprPrefix            = { BaseExprPrefixBase | BaseExprPrefixAwait }
-BaseExprPrefixBase        = { "++" | "--" | "-" | "~" | "!" | "fail" | "report" }
+BaseExprPrefixBase        = { "++" | "--" | "-" | "~" | "!" }
 BaseExprPrefixAwait       = { "await" ~ ("(" ~ MiddleExpr ~ ")")? }
 BaseExprSuffixBase        = { "++" | "--" }
 BaseExprSuffixInvoke      = { QYUAN_L ~ (Expr ~ (COMMA ~ Expr)*)? ~ QYUAN_R }
@@ -71,6 +71,8 @@ NameExpr                  = { Ids }
 Expr                      = { (NameExpr ~ AssignOp)* ~ MiddleExpr }
 
 LoopLabel      = { Id }
+CmdStmtName    = { "return" | "abort" | "report" }
+CmdStmt        = { CmdStmtName ~ MiddleExpr? }
 ForStmt        = { (LoopLabel ~ ":")? ~ "for" ~ Id ~ "in" ~ (IndexExpr | MiddleExpr) ~ QHUA_L ~ Stmts ~ QHUA_R }
 IfPart         = { "if" ~ MiddleExpr ~ QHUA_L ~ Stmts ~ QHUA_R }
 IfEndPart      = { QHUA_L ~ Stmts ~ QHUA_R }
@@ -85,7 +87,7 @@ ExprStmt       = { Expr }
 FuncStmt       = { "func" ~ Id ~ Args ~ FuncBody }
 AnnoPart       = { "@" ~ Id ~ "=" ~ MiddleExpr ~ LINE }
 TaskStmt       = { AnnoPart* ~ "task" ~ Id ~ Args ~ FuncBody }
-Stmt           = { ForStmt | IfStmt | BreakStmt | ContinueStmt | DoWhileStmt | WhileStmt | DefVarStmt | ExprStmt | FuncStmt | TaskStmt }
+Stmt           = { CmdStmt | ForStmt | IfStmt | BreakStmt | ContinueStmt | DoWhileStmt | WhileStmt | DefVarStmt | ExprStmt | FuncStmt | TaskStmt }
 Stmts          = { LINE? ~ (Stmt ~ LINE)* ~ Stmt? ~ LINE? }
 
 ProgramFile = { SOI ~ LINE? ~ Stmts ~ EOI }

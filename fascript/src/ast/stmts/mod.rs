@@ -25,6 +25,7 @@ use crate::ast::exprs::func_expr::AstFuncExpr;
 
 #[derive(Clone, Debug)]
 pub enum AstStmt {
+    Abort(AstExpr),
     Break(AstBreakStmt),
     Continue(AstContinueStmt),
     DefVar(AstDefVarStmt),
@@ -32,6 +33,7 @@ pub enum AstStmt {
     Expr(AstExpr),
     For(AstForStmt),
     If(AstIfStmt),
+    Report(AstExpr),
     Return(AstExpr),
     While(AstWhileStmt),
 }
@@ -63,6 +65,32 @@ impl Parse3Ext for AstStmt {
         match root.into_inner().next() {
             Some(root_item) => match root_item.as_rule() {
                 Rule::BreakStmt => vec![AstStmt::Break(AstBreakStmt::parse(root_item))],
+                Rule::CmdStmt => {
+                    let mut stmts = vec![];
+                    let mut cmd_name = "".to_string();
+                    let mut payload_expr = AstExpr::None;
+                    for cmd_item in root_item.into_inner() {
+                        match cmd_item.as_rule() {
+                            Rule::CmdStmtName => cmd_name = cmd_item.as_str().to_string(),
+                            Rule::MiddleExpr => {
+                                let expr = AstExpr::parse_middle_expr(cmd_item);
+                                if expr.2.len() > 0 {
+                                    panic!()
+                                }
+                                stmts.extend(expr.0);
+                                payload_expr = expr.1;
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    stmts.push(match &cmd_name[..] {
+                        "abort" => AstStmt::Abort(payload_expr),
+                        "report" => AstStmt::Report(payload_expr),
+                        "return" => AstStmt::Return(payload_expr),
+                        _ => unreachable!(),
+                    });
+                    stmts
+                }
                 Rule::ContinueStmt => vec![AstStmt::Continue(AstContinueStmt::parse(root_item))],
                 Rule::DoWhileStmt => AstDoWhileStmt::parse(root_item),
                 Rule::WhileStmt => AstWhileStmt::parse(root_item),

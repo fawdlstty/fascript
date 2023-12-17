@@ -2,24 +2,28 @@ use super::op2_calc::Op2Calc;
 use super::runtime_base::RuntimeBase;
 use super::runtime_base::Variables;
 use super::runtime_base::VariablesType;
+use crate::ast::blocks::func::AstAnnoParts;
 use crate::ast::blocks::func::AstFunc;
 use crate::ast::blocks::func::FasFunc;
 use crate::ast::blocks::func::FasTask;
-use crate::ast::exprs::fail_expr;
 use crate::ast::exprs::invoke_expr::AstInvokeExpr;
 use crate::ast::exprs::op1_expr::AstOp1Expr;
 use crate::ast::exprs::op2_expr::AstOp2Expr;
 use crate::ast::exprs::value_expr::FasValue;
+use crate::ast::exprs::value_expr::TaskControl;
 use crate::ast::exprs::value_expr::TaskReply;
 use crate::ast::exprs::value_expr::TaskResult;
 use crate::ast::exprs::value_expr::TaskValue;
+use crate::ast::exprs::value_expr::TaskValueShadow;
 use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
 use crate::ast::types::AstType;
 use crate::utils::oper_utils::OperUtils;
 use crate::utils::time_utils::NaiveDateTimeExt;
 use async_recursion::async_recursion;
+use chrono::Duration;
 use chrono::NaiveDateTime;
+use tokio::time;
 
 macro_rules! process_loop_ctrl {
     ($self:expr, $stmt:expr) => {
@@ -54,6 +58,8 @@ pub struct TaskRunner {
     stack: Vec<Variables>,
     ret_value: Option<FasValue>,
     loop_ctrl: LoopControl,
+    annos: AstAnnoParts,
+    task_val_shadow: Option<TaskValueShadow>,
 }
 
 impl TaskRunner {
@@ -63,6 +69,8 @@ impl TaskRunner {
             stack: vec![],
             ret_value: None,
             loop_ctrl: LoopControl::None,
+            annos: AstAnnoParts::new(),
+            task_val_shadow: None,
         }
     }
 
@@ -71,10 +79,43 @@ impl TaskRunner {
         if self.loop_ctrl != LoopControl::None {
             return;
         }
+        // Avoid the return of lambda expressions that are still valid externally
         if self.stack.len() == 0 {
             self.ret_value = None;
         }
+
+        match self.task_val_shadow.as_mut() {
+            Some(shadow) => {
+                if let Ok(ctrl) = shadow.ctrl_rx.try_recv() {
+                    match ctrl {
+                        TaskControl::Pause => todo!(),
+                        TaskControl::Resume => { /* ignore */ }
+                        TaskControl::Cancel => {
+                            self.ret_value = match self.annos.get_cancel_expr() {
+                                Some(expr) => Some(self.eval_expr(expr).await),
+                                None => Some(FasValue::TaskResult(TaskResult::Canceled)),
+                            };
+                            self.loop_ctrl = LoopControl::Return;
+                        }
+                        TaskControl::Rollback => {
+                            self.ret_value = match self.annos.get_rollback_expr() {
+                                Some(expr) => Some(self.eval_expr(expr).await),
+                                None => Some(FasValue::TaskResult(TaskResult::Rolledbacked)),
+                            };
+                            self.loop_ctrl = LoopControl::Return;
+                        }
+                    }
+                }
+            }
+            None => {}
+        }
+
         match stmt {
+            AstStmt::Abort(expr) => {
+                let expr = self.eval_expr(expr).await;
+                self.ret_value = Some(FasValue::TaskResult(TaskResult::Failure(Box::new(expr))));
+                self.loop_ctrl = LoopControl::Return;
+            }
             AstStmt::Break(break_stmt) => self.loop_ctrl = LoopControl::Break(break_stmt.label),
             AstStmt::Continue(continue_stmt) => {
                 self.loop_ctrl = LoopControl::Continue(continue_stmt.label)
@@ -143,8 +184,20 @@ impl TaskRunner {
                         .await;
                 }
             }
+            AstStmt::Report(expr) => {
+                let expr = self.eval_expr(expr).await;
+                if let Some(shadow) = self.task_val_shadow.as_mut() {
+                    _ = shadow.result_tx.send(TaskReply::TaskProgress(expr));
+                }
+            }
             AstStmt::Return(expr) => {
-                self.ret_value = Some(self.eval_expr(expr).await);
+                let expr = self.eval_expr(expr).await;
+                if self.task_val_shadow.is_some() {
+                    self.ret_value =
+                        Some(FasValue::TaskResult(TaskResult::Success(Box::new(expr))));
+                } else {
+                    self.ret_value = Some(expr);
+                }
                 self.loop_ctrl = LoopControl::Return;
             }
             AstStmt::While(while_stmt) => loop {
@@ -200,19 +253,11 @@ impl TaskRunner {
                 }
                 FasValue::None
             }
-            AstExpr::Fail(fail_expr) => {
-                let fail_expr = self.eval_expr(*fail_expr.value).await;
-                self.ret_value = Some(FasValue::TaskResult(TaskResult::Failure(Box::new(
-                    fail_expr,
-                ))));
-                FasValue::None
-            }
             AstExpr::Func(func_expr) => FasValue::Func(Box::new(func_expr)),
             AstExpr::Index(_) => unreachable!(),
             AstExpr::Invoke(invoke_expr) => self.eval_func_expr(&invoke_expr).await,
             AstExpr::Op1(op1_expr) => self.eval_op1_expr(&op1_expr).await,
             AstExpr::Op2(op2_expr) => self.eval_op2_expr(&op2_expr).await,
-            AstExpr::Report(_) => panic!(),
             AstExpr::Switch(_) => todo!(),
             AstExpr::Temp(temp_expr) => self.get_var(&temp_expr.name).unwrap_or(FasValue::None),
             AstExpr::TypeWrap(_) => todo!(),
@@ -310,24 +355,68 @@ impl TaskRunner {
         let base2 = self.base.clone();
         tokio::spawn(async move {
             let mut runner = TaskRunner::new(base2);
-            let mut ret = FasValue::None;
-            let loop_ctrl = runner.loop_ctrl.clone();
+            runner.annos = task.annos;
+            runner.task_val_shadow = Some(shadow);
+            let last_loop_ctrl = runner.loop_ctrl.clone();
             runner.loop_ctrl = LoopControl::None;
-            runner.add_level_invoke(&task.arg_names, args);
-            // TODO 传递shadow或存类里
-            panic!();
-            runner.eval_stmts(task.body_stmts.clone());
-            if runner.ret_value.is_some() {
-                let mut ret_value = None;
-                std::mem::swap(&mut ret_value, &mut runner.ret_value);
-                ret = ret_value.unwrap();
-            }
+            let mut ret = FasValue::None;
+
+            // get degradation info
+            runner.add_level_invoke(&task.arg_names, args.clone()).await;
+            let abort_proc = runner.annos.get_abort_expr();
+            let mut on_abort_retry_count = match abort_proc.retry_count {
+                Some(retry_count) => runner.eval_expr(retry_count).await.as_int(),
+                None => 0,
+            };
+            let on_abort_retry_interval = match abort_proc.retry_interval {
+                Some(retry_interval) => runner.eval_expr(retry_interval).await.as_timespan(),
+                None => Duration::seconds(0),
+            };
+            let on_abort = abort_proc.on_abort;
             runner.sub_level();
-            runner.loop_ctrl = loop_ctrl;
-            _ = shadow
-                .result_tx
-                .send(TaskReply::TaskResult(TaskResult::Success(Box::new(ret))));
-            todo!()
+
+            while on_abort_retry_count >= 0 {
+                runner.add_level_invoke(&task.arg_names, args.clone()).await;
+                runner.eval_stmts(task.body_stmts.clone()).await;
+                if runner.ret_value.is_some() {
+                    let mut ret_value = None;
+                    std::mem::swap(&mut ret_value, &mut runner.ret_value);
+                    ret = ret_value.unwrap();
+                }
+                runner.sub_level();
+                if let FasValue::TaskResult(tr) = &ret {
+                    if let TaskResult::Failure(_) = tr {
+                        on_abort_retry_count -= 1;
+                        if on_abort_retry_count >= 0 {
+                            time::sleep(std::time::Duration::from_micros(
+                                on_abort_retry_interval.num_microseconds().unwrap_or(0) as u64,
+                            ))
+                            .await;
+                        }
+                        continue;
+                    }
+                }
+                break;
+            }
+            if let FasValue::TaskResult(tr) = &ret {
+                if let TaskResult::Failure(_) = tr {
+                    if let Some(abort_expr) = on_abort {
+                        ret = runner.eval_expr(abort_expr).await;
+                    }
+                }
+            }
+            if FasValue::None == ret {
+                ret = FasValue::TaskResult(TaskResult::Success(Box::new(ret)));
+            }
+            //
+            runner.loop_ctrl = last_loop_ctrl;
+            if let FasValue::TaskResult(tr) = ret {
+                _ = runner
+                    .task_val_shadow
+                    .unwrap()
+                    .result_tx
+                    .send(TaskReply::TaskResult(tr));
+            }
         });
         FasValue::Task(ret)
     }

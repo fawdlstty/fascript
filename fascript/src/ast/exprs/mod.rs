@@ -1,24 +1,20 @@
 pub mod await_expr;
-pub mod fail_expr;
 pub mod func_expr;
 pub mod index_expr;
 pub mod invoke_expr;
 pub mod op1_expr;
 pub mod op2_expr;
-pub mod report_expr;
 pub mod switch_expr;
 pub mod temp_expr;
 pub mod type_wrap_expr;
 pub mod value_expr;
 
 use self::await_expr::AstAwaitExpr;
-use self::fail_expr::AstFailExpr;
 use self::func_expr::AstFuncExpr;
 use self::index_expr::AstIndexExpr;
 use self::invoke_expr::AstInvokeExpr;
 use self::op1_expr::AstOp1Expr;
 use self::op2_expr::AstOp2Expr;
-use self::report_expr::AstReportExpr;
 use self::switch_expr::AstSwitchExpr;
 use self::temp_expr::AstTempExpr;
 use self::type_wrap_expr::AstTypeWrapExpr;
@@ -36,13 +32,11 @@ use crate::utils::str_utils::StrUtils;
 pub enum AstExpr {
     None,
     Await(AstAwaitExpr),
-    Fail(AstFailExpr),
     Func(AstFuncExpr),
     Index(AstIndexExpr),
     Invoke(AstInvokeExpr),
     Op1(AstOp1Expr),
     Op2(AstOp2Expr),
-    Report(AstReportExpr),
     Switch(AstSwitchExpr),
     Temp(AstTempExpr),
     TypeWrap(AstTypeWrapExpr),
@@ -199,8 +193,6 @@ impl AstExpr {
                             AstExpr::Value(FasValue::Int(1)),
                         )));
                     }
-                    "fail" => expr = AstFailExpr::new(expr),
-                    "fail" => expr = AstFailExpr::new(expr),
                     _ => expr = AstOp1Expr::new(expr, op_str, true),
                 },
                 StringOrExpr::OExpr(op_expr) => todo!(),
@@ -326,13 +318,11 @@ impl AstExpr {
         match self {
             AstExpr::None => AstType::None,
             AstExpr::Await(_) => AstType::Future,
-            AstExpr::Fail(_) => AstType::TaskResult,
             AstExpr::Func(func_expr) => func_expr.func.get_type(),
             AstExpr::Index(_) => AstType::Index,
             AstExpr::Invoke(invoke_expr) => todo!(),
             AstExpr::Op1(_) => todo!(),
             AstExpr::Op2(op2_expr) => op2_expr.get_type(),
-            AstExpr::Report(_) => AstType::TaskResult,
             AstExpr::Switch(_) => todo!(),
             AstExpr::Temp(_) => todo!(),
             AstExpr::TypeWrap(_) => todo!(),
