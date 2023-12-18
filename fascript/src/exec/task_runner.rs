@@ -18,6 +18,7 @@ use crate::ast::exprs::value_expr::TaskValueShadow;
 use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
 use crate::ast::types::AstType;
+use crate::built_in::BuiltIn;
 use crate::utils::oper_utils::OperUtils;
 use crate::utils::time_utils::NaiveDateTimeExt;
 use async_recursion::async_recursion;
@@ -299,7 +300,9 @@ impl TaskRunner {
                 _ => panic!(),
             },
             false => {
-                panic!()
+                let func = BuiltIn::access_type_member(left.get_type(), &op1_expr.op);
+                let invoke = AstInvokeExpr::new(AstExpr::Value(func), vec![AstExpr::Value(left)]);
+                self.eval_expr(invoke).await
             }
         }
     }

@@ -11,7 +11,7 @@ async fn main() {
     //}
     //main()
     @on_abort_retry_count = 3
-    @on_abort_retry_interval = 3 sec
+    @on_abort_retry_interval = 3.sec
     task retry_func() {
         os.println("on retry_func()")
         abort

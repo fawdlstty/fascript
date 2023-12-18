@@ -23,47 +23,47 @@ pub enum AstType {
 }
 
 impl AstType {
-    pub fn new() -> AstType {
-        AstType::None
-    }
+    // pub fn new() -> AstType {
+    //     AstType::None
+    // }
 
-    pub fn parse_str(type_name: String) -> AstType {
-        match &type_name[..] {
-            "void" => AstType::Void,
-            "bool" => AstType::Bool,
-            "datetime" => AstType::DateTime,
-            "float" => AstType::Float,
-            "int" => AstType::Int,
-            "string" => AstType::String,
-            "task" => AstType::Task,
-            "timespan" => AstType::TimeSpan,
-            _ => unreachable!(),
-        }
-    }
-}
+    // pub fn parse_str(type_name: String) -> AstType {
+    //     match &type_name[..] {
+    //         "void" => AstType::Void,
+    //         "array" => AstType::Array,
+    //         "bool" => AstType::Bool,
+    //         "datetime" => AstType::DateTime,
+    //         "float" => AstType::Float,
+    //         //"func" => AstType::Func(_),
+    //         "future" => AstType::Future,
+    //         "index" => AstType::Index,
+    //         "int" => AstType::Int,
+    //         "string" => AstType::String,
+    //         "task" => AstType::Task,
+    //         "timespan" => AstType::TimeSpan,
+    //         _ => unreachable!(),
+    //     }
+    // }
 
-impl ParseExt for AstType {
-    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
-        let mut _temp_type = AstType::None;
-        for root_item in root.into_inner() {
-            match root_item.as_rule() {
-                Rule::VoidType => _temp_type = AstType::Void,
-                Rule::BaseType => {
-                    let tmp_item = root_item.into_inner().next().unwrap();
-                    match tmp_item.as_rule() {
-                        Rule::BaseTypeStr => {
-                            _temp_type = Self::parse_str(tmp_item.as_str().to_string())
-                        }
-                        _ => unreachable!(),
-                    }
-                }
-                //Rule::TupleType => _temp_type = AstType::Tuple(AstTupleType::parse(root_item)),
-                //Rule::TypeSuffix => {
-                //    _temp_type = AstOp1Type::new(_temp_type, root_item.as_str().to_string())
-                //}
-                _ => unreachable!(),
-            }
+    pub fn get_str(&self) -> &'static str {
+        match self {
+            AstType::None => "(none)",
+            AstType::Array => "array",
+            AstType::Bool => "bool",
+            AstType::DateTime => "datetime",
+            AstType::Float => "float",
+            AstType::Func(_) => "func",
+            AstType::Future => "future",
+            AstType::Index => "index",
+            AstType::Int => "int",
+            AstType::IMap => "imap",
+            AstType::SMap => "smap",
+            AstType::String => "string",
+            AstType::TimeSpan => "timespan",
+            AstType::Tuple(_) => "tuple",
+            AstType::Void => "void",
+            AstType::Task => "task",
+            AstType::TaskResult => "taskresult",
         }
-        _temp_type
     }
 }

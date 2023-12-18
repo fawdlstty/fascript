@@ -28,11 +28,15 @@ impl AstFunc {
     }
 
     pub fn get_type(&self) -> AstType {
-        AstType::Func(match self {
+        AstType::Func(self.get_arg_count())
+    }
+
+    pub fn get_arg_count(&self) -> usize {
+        match self {
             AstFunc::NativeFunc(nfunc) => nfunc.get_arg_count(),
             AstFunc::FasFunc(func) => func.arg_names.len(),
             AstFunc::FasTask(task) => task.arg_names.len(),
-        })
+        }
     }
 }
 
@@ -137,8 +141,14 @@ impl ParseExt for AstAnnoPart {
             match root_item.as_rule() {
                 Rule::Id => {
                     anno_type = root_item.get_id();
-                    if !vec!["pause", "resume", "degradation", "rollback", "retry"]
-                        .contains(&&anno_type[..])
+                    if !vec![
+                        "on_pause",
+                        "on_resume",
+                        "on_abort",
+                        "on_abort_retry_count",
+                        "on_abort_retry_interval",
+                    ]
+                    .contains(&&anno_type[..])
                     {
                         panic!()
                     }

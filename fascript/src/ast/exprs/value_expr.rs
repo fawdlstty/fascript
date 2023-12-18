@@ -272,6 +272,8 @@ define_cast!(bool, as_bool, Bool);
 define_cast!(f64, as_float, Float);
 define_cast!(i64, as_int, Int);
 define_cast!(String, as_str, String);
+define_cast!(NaiveDateTime, as_datetime, DateTime);
+define_cast!(Duration, as_timespan, TimeSpan);
 
 // void
 

@@ -28,10 +28,8 @@ impl Parse3Ext for AstDefVarStmt {
         let mut pre_stmts = vec![];
         let mut post_stmts = vec![];
         let mut stmt = AstDefVarStmt { def_vars: vec![] };
-        let mut var_type = None;
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::Type => var_type = Some(AstType::parse(root_item)),
                 Rule::DefVarItemPart => {
                     let mut var_name = "";
                     let mut init_value = AstExpr::None;
