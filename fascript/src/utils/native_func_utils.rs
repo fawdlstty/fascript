@@ -90,7 +90,7 @@ macro_rules! FasWrapper {
 					let mut index = 0;
 					$(let $name1 = $name1::from(args[index].clone());index+=1;)*
 					let _ = index;
-					(self.0)($($name1),*);
+					(self.0)($($name1),*)
 				};
                 r.into()
             }

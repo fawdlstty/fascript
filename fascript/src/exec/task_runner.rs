@@ -229,6 +229,7 @@ impl TaskRunner {
         match expr {
             AstExpr::None => FasValue::None,
             AstExpr::Await(await_expr) => {
+                panic!();
                 let task = self.eval_expr(*await_expr.value).await.as_task();
                 let fin = match await_expr.wait {
                     Some(wait) => {
