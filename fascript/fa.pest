@@ -47,9 +47,8 @@ TupleExpr                 = { QYUAN_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QYUAN
 QuotExpr                  = { QYUAN_L ~ Expr ~ QYUAN_R }
 ArrayExpr                 = { QFANG_L ~ (IndexExpr | Expr) ~ QFANG_R }
 BaseExpr                  = { Literal | NewExpr | LambdaExpr | TupleExpr | QuotExpr | Id | ArrayExpr }
-BaseExprPrefix            = { BaseExprPrefixBase | BaseExprPrefixAwait }
+BaseExprPrefix            = { BaseExprPrefixBase }
 BaseExprPrefixBase        = { "++" | "--" | "-" | "~" | "!" }
-BaseExprPrefixAwait       = { "await" ~ ("(" ~ MiddleExpr ~ ")")? }
 BaseExprSuffixBase        = { "++" | "--" }
 BaseExprSuffixInvoke      = { QYUAN_L ~ (Expr ~ (COMMA ~ Expr)*)? ~ QYUAN_R }
 BaseExprSuffixArrayAccess = { QFANG_L ~ IndexExpr ~ QFANG_R }
@@ -65,8 +64,9 @@ Middle3OpExpr             = { StrongExpr ~ "?" ~ StrongExpr ~ ":" ~ StrongExpr }
 CalcOp                    = { "+" | "-" | "*" | "/" | "**" | "%" | "|" | "&" | "^" | "&&" | "||" | "<<" | ">>" | ">" | ">=" | "<" | "<=" | "==" | "!=" | "??" }
 AssignOp                  = { "=" | "+=" | "-=" | "*=" | "/=" | "**=" | "%=" | "|=" | "&=" | "^=" | "&&=" | "||=" | "<<=" | ">>=" | "??=" }
 Middle2OpExpr             = { StrongExpr ~ (CalcOp ~ StrongExpr)* }
-AwaitExpr                 = { "await" ~ StrongExpr }
-MiddleExpr                = { Middle3OpExpr | Middle2OpExpr | AwaitExpr }
+AwaitExpr                 = { "await" ~ ("(" ~ MiddleExpr2 ~ ")")? ~ MiddleExpr }
+MiddleExpr2               = { MiddleExpr }
+MiddleExpr                = { AwaitExpr | Middle3OpExpr | Middle2OpExpr }
 NameExpr                  = { Ids }
 Expr                      = { (NameExpr ~ AssignOp)* ~ MiddleExpr }
 

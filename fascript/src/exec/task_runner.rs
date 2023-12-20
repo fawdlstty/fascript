@@ -229,8 +229,8 @@ impl TaskRunner {
         match expr {
             AstExpr::None => FasValue::None,
             AstExpr::Await(await_expr) => {
-                panic!();
-                let task = self.eval_expr(*await_expr.value).await.as_task();
+                let task = self.eval_expr(*await_expr.value).await;
+                let task = task.as_task();
                 let fin = match await_expr.wait {
                     Some(wait) => {
                         Some(NaiveDateTime::now() + self.eval_expr(*wait).await.as_timespan())
@@ -243,7 +243,9 @@ impl TaskRunner {
                 };
                 while check_continue() {
                     match task.result_rx.try_recv() {
-                        Ok(TaskReply::TaskResult(result)) => return FasValue::TaskResult(result),
+                        Ok(TaskReply::TaskResult(result)) => {
+                            return FasValue::TaskResult(result);
+                        }
                         Ok(TaskReply::TaskProgress(step)) => {
                             // TODO
                             todo!()
@@ -380,6 +382,8 @@ impl TaskRunner {
             runner.sub_level();
 
             while on_abort_retry_count >= 0 {
+                runner.ret_value = None;
+                runner.loop_ctrl = LoopControl::None;
                 runner.add_level_invoke(&task.arg_names, args.clone()).await;
                 runner.eval_stmts(task.body_stmts.clone()).await;
                 if runner.ret_value.is_some() {
@@ -420,6 +424,8 @@ impl TaskRunner {
                     .unwrap()
                     .result_tx
                     .send(TaskReply::TaskResult(tr));
+            } else {
+                panic!()
             }
         });
         FasValue::Task(ret)

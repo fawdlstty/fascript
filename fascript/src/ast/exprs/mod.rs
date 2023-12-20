@@ -47,21 +47,41 @@ impl AstExpr {
     pub fn parse_middle_expr(
         root: pest::iterators::Pair<'_, Rule>,
     ) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
-        let mut expr = None;
-        for root_item in root.into_inner() {
-            match root_item.as_rule() {
-                Rule::Middle3OpExpr => match expr {
-                    Some(_) => unreachable!(),
-                    None => expr = Some(Self::parse_op3_expr(root_item)),
-                },
-                Rule::Middle2OpExpr => match expr {
-                    Some(_) => unreachable!(),
-                    None => expr = Some(Self::parse_op2_expr(root_item)),
-                },
-                _ => unreachable!(),
+        let root = root.into_inner().next().unwrap();
+        match root.as_rule() {
+            Rule::AwaitExpr => {
+                let mut await_expr = None;
+                let mut value_expr = None;
+                for root_item in root.into_inner() {
+                    match root_item.as_rule() {
+                        Rule::MiddleExpr2 => {
+                            await_expr = Some(Self::parse_middle_expr(
+                                root_item.into_inner().next().unwrap(),
+                            ))
+                        }
+                        Rule::MiddleExpr => value_expr = Some(Self::parse_middle_expr(root_item)),
+                        _ => unreachable!(),
+                    }
+                }
+                let mut pre_stmts = vec![];
+                let mut post_stmts = vec![];
+                let value_expr = value_expr.unwrap();
+                pre_stmts.extend(value_expr.0);
+                post_stmts.extend(value_expr.2);
+                let expr = match await_expr {
+                    Some(await_expr) => {
+                        pre_stmts.extend(await_expr.0);
+                        post_stmts.extend(await_expr.2);
+                        AstAwaitExpr::new(Some(await_expr.1), value_expr.1)
+                    }
+                    None => AstAwaitExpr::new(None, value_expr.1),
+                };
+                (pre_stmts, expr, post_stmts)
             }
+            Rule::Middle3OpExpr => Self::parse_op3_expr(root),
+            Rule::Middle2OpExpr => Self::parse_op2_expr(root),
+            _ => unreachable!(),
         }
-        expr.unwrap()
     }
 
     fn parse_op3_expr(root: pest::iterators::Pair<'_, Rule>) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
@@ -135,8 +155,8 @@ impl AstExpr {
         root: pest::iterators::Pair<'_, Rule>,
     ) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
         enum StringOrExpr {
-            String(String),
-            OExpr(Option<AstExpr>),
+            Operator(String),
+            Await(Option<AstExpr>),
         }
         let mut pre_stmts = vec![];
         let mut post_stmts = vec![];
@@ -149,20 +169,20 @@ impl AstExpr {
                     let root_item = root_item.into_inner().next().unwrap();
                     match root_item.as_rule() {
                         Rule::BaseExprPrefixBase => {
-                            prefixs.push(StringOrExpr::String(root_item.as_str().to_string()))
+                            prefixs.push(StringOrExpr::Operator(root_item.as_str().to_string()))
                         }
-                        Rule::BaseExprPrefixAwait => {
-                            match root_item.into_inner().next() {
-                                Some(root_item) => {
-                                    let expr = AstExpr::parse_middle_expr(root_item);
-                                    if expr.0.len() + expr.2.len() > 0 {
-                                        panic!()
-                                    }
-                                    prefixs.push(StringOrExpr::OExpr(Some(expr.1)));
-                                }
-                                None => {}
-                            };
-                        }
+                        // Rule::BaseExprPrefixAwait => {
+                        //     match root_item.into_inner().next() {
+                        //         Some(root_item) => {
+                        //             let expr = AstExpr::parse_middle_expr(root_item);
+                        //             if expr.0.len() + expr.2.len() > 0 {
+                        //                 panic!()
+                        //             }
+                        //             prefixs.push(StringOrExpr::Await(Some(expr.1)))
+                        //         }
+                        //         None => prefixs.push(StringOrExpr::Await(None)),
+                        //     };
+                        // }
                         _ => unreachable!(),
                     }
                     //
@@ -178,7 +198,7 @@ impl AstExpr {
         let mut expr = oexpr.unwrap();
         while let Some(prefix_op) = prefixs.pop() {
             match prefix_op {
-                StringOrExpr::String(op_str) => match &op_str[..] {
+                StringOrExpr::Operator(op_str) => match &op_str[..] {
                     "++" => {
                         pre_stmts.push(AstStmt::Expr(AstOp2Expr::new(
                             expr.clone(),
@@ -195,7 +215,7 @@ impl AstExpr {
                     }
                     _ => expr = AstOp1Expr::new(expr, op_str, true),
                 },
-                StringOrExpr::OExpr(op_expr) => todo!(),
+                StringOrExpr::Await(op_expr) => expr = AstAwaitExpr::new(op_expr, expr),
             }
         }
         for suffix_ctx in suffix_ctxs {
