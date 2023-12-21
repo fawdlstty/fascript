@@ -20,6 +20,7 @@ use crate::ast::stmts::AstStmt;
 use crate::ast::types::AstType;
 use crate::built_in::BuiltIn;
 use crate::utils::oper_utils::OperUtils;
+use crate::utils::time_utils::DurationExt;
 use crate::utils::time_utils::NaiveDateTimeExt;
 use async_recursion::async_recursion;
 use chrono::Duration;
@@ -229,32 +230,47 @@ impl TaskRunner {
         match expr {
             AstExpr::None => FasValue::None,
             AstExpr::Await(await_expr) => {
-                let task = self.eval_expr(*await_expr.value).await;
-                let task = task.as_task();
-                let fin = match await_expr.wait {
-                    Some(wait) => {
-                        Some(NaiveDateTime::now() + self.eval_expr(*wait).await.as_timespan())
-                    }
-                    None => None,
-                };
-                let check_continue = move || match fin {
-                    Some(dest_time) => NaiveDateTime::now() < dest_time,
-                    None => true,
-                };
-                while check_continue() {
-                    match task.result_rx.try_recv() {
-                        Ok(TaskReply::TaskResult(result)) => {
-                            return FasValue::TaskResult(result);
-                        }
-                        Ok(TaskReply::TaskProgress(step)) => {
-                            // TODO
-                            todo!()
-                        }
-                        Err(_) => {
-                            tokio::task::yield_now().await;
+                let value = self.eval_expr(*await_expr.value).await;
+                match value.get_type() {
+                    AstType::TimeSpan => time::sleep(value.as_timespan().to_dur()).await,
+                    AstType::DateTime => {
+                        let sleep_ns = (value.as_datetime() - NaiveDateTime::now())
+                            .num_nanoseconds()
+                            .unwrap_or(0);
+                        if sleep_ns >= 0 {
+                            time::sleep(Duration::nanoseconds(sleep_ns).to_dur()).await
                         }
                     }
+                    AstType::Task => {
+                        let task = value.as_task();
+                        let fin = match await_expr.wait {
+                            Some(wait) => Some(
+                                NaiveDateTime::now() + self.eval_expr(*wait).await.as_timespan(),
+                            ),
+                            None => None,
+                        };
+                        let check_continue = move || match fin {
+                            Some(dest_time) => NaiveDateTime::now() < dest_time,
+                            None => true,
+                        };
+                        while check_continue() {
+                            match task.result_rx.try_recv() {
+                                Ok(TaskReply::TaskResult(result)) => {
+                                    return FasValue::TaskResult(result);
+                                }
+                                Ok(TaskReply::TaskProgress(step)) => {
+                                    // TODO
+                                    todo!()
+                                }
+                                Err(_) => {
+                                    tokio::task::yield_now().await;
+                                }
+                            }
+                        }
+                    }
+                    _ => unreachable!(),
                 }
+
                 FasValue::None
             }
             AstExpr::Func(func_expr) => FasValue::Func(Box::new(func_expr)),

@@ -30,6 +30,7 @@ impl NaiveDateTimeExt for NaiveDateTime {
 
 pub trait DurationExt {
     fn format(&self) -> String;
+    fn to_dur(&self) -> std::time::Duration;
 }
 
 impl DurationExt for Duration {
@@ -47,5 +48,9 @@ impl DurationExt for Duration {
             }
             _ => format!("{:.02} year", d / 86_400_000_000.0 / 365.0),
         }
+    }
+
+    fn to_dur(&self) -> std::time::Duration {
+        std::time::Duration::from_nanos(self.num_nanoseconds().unwrap_or(0) as u64)
     }
 }
