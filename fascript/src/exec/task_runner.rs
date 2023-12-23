@@ -62,6 +62,7 @@ pub struct TaskRunner {
     loop_ctrl: LoopControl,
     annos: AstAnnoParts,
     task_val_shadow: Option<TaskValueShadow>,
+    is_atomic: bool,
 }
 
 impl TaskRunner {
@@ -73,6 +74,7 @@ impl TaskRunner {
             loop_ctrl: LoopControl::None,
             annos: AstAnnoParts::new(),
             task_val_shadow: None,
+            is_atomic: false,
         }
     }
 
@@ -86,8 +88,8 @@ impl TaskRunner {
             self.ret_value = None;
         }
 
-        match self.task_val_shadow.as_mut() {
-            Some(shadow) => {
+        if self.is_atomic {
+            if let Some(shadow) = self.task_val_shadow.as_mut() {
                 if let Ok(ctrl) = shadow.ctrl_rx.try_recv() {
                     match ctrl {
                         TaskControl::Pause => todo!(),
@@ -109,7 +111,6 @@ impl TaskRunner {
                     }
                 }
             }
-            None => {}
         }
 
         match stmt {
@@ -379,6 +380,7 @@ impl TaskRunner {
             let mut runner = TaskRunner::new(base2);
             runner.annos = task.annos;
             runner.task_val_shadow = Some(shadow);
+            runner.is_atomic = runner.annos.is_atomic();
             let last_loop_ctrl = runner.loop_ctrl.clone();
             runner.loop_ctrl = LoopControl::None;
             let mut ret = FasValue::None;

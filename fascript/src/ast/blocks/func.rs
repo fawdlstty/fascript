@@ -142,6 +142,7 @@ impl ParseExt for AstAnnoPart {
                 Rule::Id => {
                     anno_type = root_item.get_id();
                     if !vec![
+                        "atomic",
                         "on_pause",
                         "on_resume",
                         "on_abort",
@@ -237,6 +238,15 @@ impl AstAnnoParts {
             }
         }
         proc
+    }
+
+    pub fn is_atomic(&self) -> bool {
+        for anno in self.annos.iter() {
+            if &anno.anno_type == "atomic" {
+                return true;
+            }
+        }
+        false
     }
 }
 
