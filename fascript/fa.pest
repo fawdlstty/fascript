@@ -72,21 +72,21 @@ Expr                      = { (NameExpr ~ AssignOp)* ~ MiddleExpr }
 
 LoopLabel      = { Id }
 CmdStmtName    = { "return" | "abort" | "report" }
-CmdStmt        = { CmdStmtName ~ (WHITESPACE ~ MiddleExpr)? }
-ForStmt        = { (LoopLabel ~ ":")? ~ "for" ~ WHITESPACE ~ Id ~ WHITESPACE ~ "in" ~ WHITESPACE ~ (IndexExpr | MiddleExpr) ~ QHUA_L ~ Stmts ~ QHUA_R }
-IfPart         = { "if" ~ WHITESPACE ~ MiddleExpr ~ QHUA_L ~ Stmts ~ QHUA_R }
+CmdStmt        = { CmdStmtName ~ (MiddleExpr)? }
+ForStmt        = { (LoopLabel ~ ":")? ~ "for" ~ Id ~ "in" ~ (IndexExpr | MiddleExpr) ~ QHUA_L ~ Stmts ~ QHUA_R }
+IfPart         = { "if" ~ MiddleExpr ~ QHUA_L ~ Stmts ~ QHUA_R }
 IfEndPart      = { QHUA_L ~ Stmts ~ QHUA_R }
-IfStmt         = { IfPart ~ ("else" ~ WHITESPACE ~ IfPart)* ~ ("else" ~ WHITESPACE ~ IfEndPart)? }
-BreakStmt      = { "break" ~ (WHITESPACE ~ Id)? }
-ContinueStmt   = { "continue" ~ (WHITESPACE ~ Id)? }
-DoWhileStmt    = { "do" ~ WHITESPACE ~ QHUA_L ~ Stmts ~ QHUA_R ~ "while" ~ WHITESPACE ~ MiddleExpr }
-WhileStmt      = { "while" ~ WHITESPACE ~ MiddleExpr ~ QHUA_L ~ Stmts ~ QHUA_R }
+IfStmt         = { IfPart ~ ("else" ~ IfPart)* ~ ("else" ~ IfEndPart)? }
+BreakStmt      = { "break" ~ (Id)? }
+ContinueStmt   = { "continue" ~ (Id)? }
+DoWhileStmt    = { "do" ~ QHUA_L ~ Stmts ~ QHUA_R ~ "while" ~ MiddleExpr }
+WhileStmt      = { "while" ~ MiddleExpr ~ QHUA_L ~ Stmts ~ QHUA_R }
 DefVarItemPart = { Id ~ "=" ~ MiddleExpr }
-DefVarStmt     = { "var" ~ WHITESPACE ~ DefVarItemPart ~ ("," ~ DefVarItemPart)* }
+DefVarStmt     = { "var" ~ DefVarItemPart ~ ("," ~ DefVarItemPart)* }
 ExprStmt       = { Expr }
-FuncStmt       = { "func" ~ WHITESPACE ~ Id ~ Args ~ FuncBody }
+FuncStmt       = { "func" ~ Id ~ Args ~ FuncBody }
 AnnoPart       = { "@" ~ Id ~ "=" ~ MiddleExpr ~ LINE }
-TaskStmt       = { AnnoPart* ~ "task" ~ WHITESPACE ~ Id ~ Args ~ FuncBody }
+TaskStmt       = { AnnoPart* ~ "task" ~ Id ~ Args ~ FuncBody }
 Stmt           = { CmdStmt | ForStmt | IfStmt | BreakStmt | ContinueStmt | DoWhileStmt | WhileStmt | DefVarStmt | ExprStmt | FuncStmt | TaskStmt }
 Stmts          = { LINE? ~ (Stmt ~ LINE)* ~ Stmt? ~ LINE? }
 

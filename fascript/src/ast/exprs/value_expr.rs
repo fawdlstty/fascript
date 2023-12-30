@@ -5,6 +5,7 @@ use chrono::Duration;
 use chrono::NaiveDateTime;
 use crossbeam::channel;
 use std::collections::HashMap;
+use std::future::Future;
 
 #[derive(Clone, Debug)]
 pub enum TaskControl {
@@ -65,6 +66,7 @@ pub enum FasValue {
     Task(TaskValue),
     TaskResult(TaskResult),
     TimeSpan(Duration),
+    Future(crossbeam::channel::Receiver<FasValue>),
 }
 
 unsafe impl Send for FasValue {}
@@ -80,6 +82,7 @@ impl PartialEq for FasValue {
             (Self::IMap(l0), Self::IMap(r0)) => l0 == r0,
             (Self::SMap(l0), Self::SMap(r0)) => l0 == r0,
             (Self::Func(_l0), Self::Func(_r0)) => false, //*l0.func == *r0.func,
+            (Self::Future(_l0), Self::Future(_r0)) => false, //*l0.func == *r0.func,
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
@@ -103,6 +106,7 @@ impl FasValue {
             FasValue::Task(_) => AstType::Task,
             FasValue::TaskResult(_) => AstType::TaskResult,
             FasValue::TimeSpan(_) => AstType::TimeSpan,
+            FasValue::Future(_) => AstType::Future,
         }
     }
 
@@ -139,6 +143,7 @@ impl FasValue {
             FasValue::Task(_) => "(task)".to_string(),
             FasValue::TaskResult(_) => "(task_result)".to_string(),
             FasValue::TimeSpan(ts) => ts.format(),
+            FasValue::Future(ts) => "(future)".to_string(),
         }
     }
 
@@ -160,6 +165,13 @@ impl FasValue {
         match self {
             FasValue::Float(f) => f.clone(),
             FasValue::Int(i) => i.clone() as f64,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn as_future(&self) -> crossbeam::channel::Receiver<FasValue> {
+        match self {
+            FasValue::Future(f) => f.clone(),
             _ => unreachable!(),
         }
     }
@@ -223,7 +235,7 @@ impl FasValue {
                 AstType::DateTime => self.clone(),
                 AstType::Float => self.as_float().into(),
                 AstType::Func(_) => todo!(),
-                AstType::Future => todo!(),
+                AstType::Future => FasValue::Future(self.as_future()),
                 AstType::Index => unreachable!(),
                 AstType::Int => self.as_int().into(),
                 AstType::IMap => todo!(),

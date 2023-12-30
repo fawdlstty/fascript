@@ -29,7 +29,10 @@ impl Op2Calc {
             //AstType::Map(_) => todo!(),
             //AstType::Tuple(_) => todo!(),
             (AstType::Void, _) if op == "??" => right,
-            _ => todo!(),
+            (a, b) => {
+                println!("{}, {}, {}", a.get_str(), op, b.get_str());
+                todo!()
+            }
             //AstType::Dynamic => todo!(),
             //AstType::Func(_) => todo!(),
         }
