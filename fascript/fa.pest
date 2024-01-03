@@ -87,7 +87,7 @@ ExprStmt       = { Expr }
 FuncStmt       = { "func" ~ Id ~ Args ~ FuncBody }
 AnnoPart       = { "@" ~ Id ~ "=" ~ MiddleExpr ~ LINE }
 TaskStmt       = { AnnoPart* ~ "task" ~ Id ~ Args ~ FuncBody }
-Stmt           = { CmdStmt | ForStmt | IfStmt | BreakStmt | ContinueStmt | DoWhileStmt | WhileStmt | DefVarStmt | ExprStmt | FuncStmt | TaskStmt }
+Stmt           = { FuncStmt | TaskStmt | CmdStmt | ForStmt | IfStmt | BreakStmt | ContinueStmt | DoWhileStmt | WhileStmt | DefVarStmt | ExprStmt }
 Stmts          = { LINE? ~ (Stmt ~ LINE)* ~ Stmt? ~ LINE? }
 
-ProgramFile = { SOI ~ LINE? ~ Stmts ~ EOI }
+ProgramFile = { SOI ~ Stmts ~ EOI }

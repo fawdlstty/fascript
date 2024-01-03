@@ -320,3 +320,23 @@ impl GetAstTypeTrait for &str {
         AstType::String
     }
 }
+
+// future
+
+// impl<T: ?Sized + Future + Unpin> From<FasValue> for T {
+//     fn from(val: FasValue) -> T {
+//         ()
+//     }
+// }
+
+// impl<F: ?Sized + Future> From<F> for FasValue {
+//     fn from(_: F) -> FasValue {
+//         FasValue::None
+//     }
+// }
+
+// impl GetAstTypeTrait for () {
+//     fn get_ast_type() -> AstType {
+//         AstType::None
+//     }
+// }
