@@ -6,6 +6,9 @@ use chrono::NaiveDateTime;
 use crossbeam::channel;
 use std::collections::HashMap;
 use std::future::Future;
+use std::time::Duration;
+use tokio::task;
+use tokio::time;
 
 #[derive(Clone, Debug)]
 pub enum TaskControl {
@@ -321,22 +324,38 @@ impl GetAstTypeTrait for &str {
     }
 }
 
-// future
+// future    ?Sized + Future + Unpin
 
-// impl<T: ?Sized + Future + Unpin> From<FasValue> for T {
-//     fn from(val: FasValue) -> T {
-//         ()
-//     }
-// }
+async fn async_value(value: FasValue) -> FasValue {
+    value
+}
 
-// impl<F: ?Sized + Future> From<F> for FasValue {
-//     fn from(_: F) -> FasValue {
-//         FasValue::None
-//     }
-// }
+impl<Tp: Into<FasValue>, T: Future<Output = Tp>> From<FasValue> for T {
+    fn from(val: FasValue) -> T {
+        if let FasValue::Future(fut) = val {
+            let handle = tokio::task::spawn(async move {
+                loop {
+                    match fut.try_recv() {
+                        Ok(val) => return val,
+                        Err(_) => time::sleep(Duration::milliseconds(1)).await,
+                    }
+                }
+            });
+            task::block_in_place(handle)
+        } else {
+            async_value(val)
+        }
+    }
+}
 
-// impl GetAstTypeTrait for () {
-//     fn get_ast_type() -> AstType {
-//         AstType::None
-//     }
-// }
+impl<Tp: Into<FasValue>, T: Future<Output = Tp>> From<T> for FasValue {
+    fn from(val: T) -> FasValue {
+        FasValue::None
+    }
+}
+
+impl<Tp: Into<FasValue>, T: Future<Output = Tp>> GetAstTypeTrait for T {
+    fn get_ast_type() -> AstType {
+        AstType::Future
+    }
+}
