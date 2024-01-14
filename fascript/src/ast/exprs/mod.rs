@@ -134,7 +134,7 @@ impl AstExpr {
         if ops.len() > 0 {
             let mut p = 0;
             let mut level = OperUtils::get_op2_privilege(&ops[0]);
-            for (index, op) in ops.iter().enumerate() {
+            for (index, _) in ops.iter().enumerate() {
                 let new_level = OperUtils::get_op2_privilege(&ops[index]);
                 if new_level > level {
                     level = new_level;
@@ -154,10 +154,6 @@ impl AstExpr {
     fn parse_strong_expr(
         root: pest::iterators::Pair<'_, Rule>,
     ) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
-        enum StringOrExpr {
-            Operator(String),
-            Await(Option<AstExpr>),
-        }
         let mut pre_stmts = vec![];
         let mut post_stmts = vec![];
         let mut prefixs = vec![];
@@ -168,21 +164,7 @@ impl AstExpr {
                 Rule::BaseExprPrefix => {
                     let root_item = root_item.into_inner().next().unwrap();
                     match root_item.as_rule() {
-                        Rule::BaseExprPrefixBase => {
-                            prefixs.push(StringOrExpr::Operator(root_item.as_str().to_string()))
-                        }
-                        // Rule::BaseExprPrefixAwait => {
-                        //     match root_item.into_inner().next() {
-                        //         Some(root_item) => {
-                        //             let expr = AstExpr::parse_middle_expr(root_item);
-                        //             if expr.0.len() + expr.2.len() > 0 {
-                        //                 panic!()
-                        //             }
-                        //             prefixs.push(StringOrExpr::Await(Some(expr.1)))
-                        //         }
-                        //         None => prefixs.push(StringOrExpr::Await(None)),
-                        //     };
-                        // }
+                        Rule::BaseExprPrefixBase => prefixs.push(root_item.as_str().to_string()),
                         _ => unreachable!(),
                     }
                     //
@@ -197,25 +179,22 @@ impl AstExpr {
         }
         let mut expr = oexpr.unwrap();
         while let Some(prefix_op) = prefixs.pop() {
-            match prefix_op {
-                StringOrExpr::Operator(op_str) => match &op_str[..] {
-                    "++" => {
-                        pre_stmts.push(AstStmt::Expr(AstOp2Expr::new(
-                            expr.clone(),
-                            "+=".to_string(),
-                            AstExpr::Value(FasValue::Int(1)),
-                        )));
-                    }
-                    "--" => {
-                        pre_stmts.push(AstStmt::Expr(AstOp2Expr::new(
-                            expr.clone(),
-                            "-=".to_string(),
-                            AstExpr::Value(FasValue::Int(1)),
-                        )));
-                    }
-                    _ => expr = AstOp1Expr::new(expr, op_str, true),
-                },
-                StringOrExpr::Await(op_expr) => expr = AstAwaitExpr::new(op_expr, expr),
+            match &prefix_op[..] {
+                "++" => {
+                    pre_stmts.push(AstStmt::Expr(AstOp2Expr::new(
+                        expr.clone(),
+                        "+=".to_string(),
+                        AstExpr::Value(FasValue::Int(1)),
+                    )));
+                }
+                "--" => {
+                    pre_stmts.push(AstStmt::Expr(AstOp2Expr::new(
+                        expr.clone(),
+                        "-=".to_string(),
+                        AstExpr::Value(FasValue::Int(1)),
+                    )));
+                }
+                _ => expr = AstOp1Expr::new(expr, prefix_op, true),
             }
         }
         for suffix_ctx in suffix_ctxs {
@@ -340,7 +319,7 @@ impl AstExpr {
             AstExpr::Await(_) => AstType::Future,
             AstExpr::Func(func_expr) => func_expr.func.get_type(),
             AstExpr::Index(_) => AstType::Index,
-            AstExpr::Invoke(invoke_expr) => todo!(),
+            AstExpr::Invoke(_) => AstType::Any,
             AstExpr::Op1(_) => todo!(),
             AstExpr::Op2(op2_expr) => op2_expr.get_type(),
             AstExpr::Switch(_) => todo!(),

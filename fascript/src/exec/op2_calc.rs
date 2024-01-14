@@ -26,12 +26,8 @@ impl Op2Calc {
             (AstType::String, AstType::String) => {
                 Self::calc_string(left.as_str(), op, right.as_str())
             }
-            //AstType::Map(_) => todo!(),
-            //AstType::Tuple(_) => todo!(),
             (AstType::Void, _) if op == "??" => right,
-            (a, b) => todo!()
-            //AstType::Dynamic => todo!(),
-            //AstType::Func(_) => todo!(),
+            (_, _) => todo!(),
         }
     }
 

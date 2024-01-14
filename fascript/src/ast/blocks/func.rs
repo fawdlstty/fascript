@@ -64,7 +64,7 @@ impl Clone for AstFunc {
 impl Debug for AstFunc {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NativeFunc(arg0) => f.debug_struct("NativeFunc").finish(),
+            Self::NativeFunc(_arg0) => f.debug_struct("NativeFunc").finish(),
             Self::FasFunc(arg0) => f.debug_tuple("FasFunc").field(arg0).finish(),
             Self::FasTask(arg0) => f.debug_tuple("FasTask").field(arg0).finish(),
         }

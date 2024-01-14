@@ -92,15 +92,15 @@ impl Eq for FasValue {}
 impl FasValue {
     pub fn get_type(&self) -> AstType {
         match self {
-            FasValue::Array(v) => AstType::Array,
+            FasValue::Array(_) => AstType::Array,
             FasValue::Bool(_) => AstType::Bool,
             FasValue::DateTime(_) => AstType::DateTime,
             FasValue::Float(_) => AstType::Float,
             FasValue::Func(f) => f.func.get_type(),
-            FasValue::IMap(im) => AstType::IMap,
+            FasValue::IMap(_) => AstType::IMap,
             FasValue::Int(_) => AstType::Int,
             FasValue::None => AstType::Void,
-            FasValue::SMap(sm) => AstType::SMap,
+            FasValue::SMap(_) => AstType::SMap,
             FasValue::String(_) => AstType::String,
             FasValue::Task(_) => AstType::Task,
             FasValue::TaskResult(_) => AstType::TaskResult,
@@ -142,7 +142,7 @@ impl FasValue {
             FasValue::Task(_) => "(task)".to_string(),
             FasValue::TaskResult(_) => "(task_result)".to_string(),
             FasValue::TimeSpan(ts) => ts.format(),
-            FasValue::Future(ts) => "(future)".to_string(),
+            FasValue::Future(_) => "(future)".to_string(),
         }
     }
 
@@ -229,6 +229,7 @@ impl FasValue {
         if self.get_type() != dest_type {
             match dest_type {
                 AstType::None => FasValue::None,
+                AstType::Any => self.clone(),
                 AstType::Array => FasValue::Array(self.as_array()),
                 AstType::Bool => self.as_bool().into(),
                 AstType::DateTime => self.clone(),

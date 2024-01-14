@@ -1,9 +1,7 @@
-use super::ParseExt;
-use super::Rule;
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum AstType {
     None,
+    Any,
     Array,
     Bool,
     DateTime,
@@ -48,6 +46,7 @@ impl AstType {
     pub fn get_str(&self) -> &'static str {
         match self {
             AstType::None => "(none)",
+            AstType::Any => "any",
             AstType::Array => "array",
             AstType::Bool => "bool",
             AstType::DateTime => "datetime",

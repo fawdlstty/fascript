@@ -274,7 +274,7 @@ impl TaskRunner {
                                 Ok(TaskReply::TaskResult(result)) => {
                                     return FasValue::TaskResult(result);
                                 }
-                                Ok(TaskReply::TaskProgress(step)) => {
+                                Ok(TaskReply::TaskProgress(finish_time)) => {
                                     // TODO
                                     todo!()
                                 }

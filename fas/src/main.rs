@@ -20,7 +20,7 @@ fn get_input(tip: &str) -> String {
     std::io::stdin()
         .read_line(&mut input)
         .expect("input failed");
-    return input.trim().to_string();
+    return input;
 }
 
 #[tokio::main]
@@ -35,19 +35,13 @@ async fn main() {
             if code_str.len() == 0 {
                 continue;
             }
-            let ch: &str = &code_str[(code_str.len() - 1)..];
+            let tmp = code_str.trim();
+            let ch: &str = &tmp[(tmp.len() - 1)..];
             if ch == "{" {
-                let mut level = 1;
-                while level > 0 {
+                loop {
                     let tmp_code_str = get_input("... ");
-                    if tmp_code_str.len() == 0 {
-                        continue;
-                    }
-                    let ch: &str = &tmp_code_str[(tmp_code_str.len() - 1)..];
-                    match ch {
-                        "{" => level += 1,
-                        "}" => level -= 1,
-                        _ => {}
+                    if tmp_code_str.trim().len() == 0 {
+                        break;
                     }
                     code_str.push_str(&tmp_code_str);
                 }
