@@ -1,6 +1,9 @@
 # fascript
 
-fascript 脚本语言（WIP）
+![version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffawdlstty%2Ffascript%2Fmain%2Ffas%2FCargo.toml&query=package.version&label=version)
+
+
+fascript 脚本语言
 
 特点：
 
