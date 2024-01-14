@@ -2,7 +2,7 @@ use super::op2_calc::Op2Calc;
 use super::runtime_base::RuntimeBase;
 use super::runtime_base::Variables;
 use super::runtime_base::VariablesType;
-use crate::ast::blocks::func::AstAnnoParts;
+use crate::ast::blocks::anno::AstAnnoParts;
 use crate::ast::blocks::func::AstFunc;
 use crate::ast::blocks::func::FasFunc;
 use crate::ast::blocks::func::FasTask;
@@ -88,12 +88,21 @@ impl TaskRunner {
             self.ret_value = None;
         }
 
-        if self.is_atomic {
-            if let Some(shadow) = self.task_val_shadow.as_mut() {
-                if let Ok(ctrl) = shadow.ctrl_rx.try_recv() {
+        if !self.is_atomic {
+            let mut in_pause = false;
+            loop {
+                fn try_recv_control(this: &mut TaskRunner) -> Option<TaskControl> {
+                    if let Some(shadow) = this.task_val_shadow.as_mut() {
+                        if let Ok(ctrl) = shadow.ctrl_rx.try_recv() {
+                            return Some(ctrl);
+                        }
+                    }
+                    None
+                }
+                if let Some(ctrl) = try_recv_control(self) {
                     match ctrl {
-                        TaskControl::Pause => todo!(),
-                        TaskControl::Resume => { /* ignore */ }
+                        TaskControl::Pause => in_pause = true,
+                        TaskControl::Resume => in_pause = false,
                         TaskControl::Cancel => {
                             self.ret_value = match self.annos.get_cancel_expr() {
                                 Some(expr) => Some(self.eval_expr(expr).await),
@@ -109,6 +118,12 @@ impl TaskRunner {
                             self.loop_ctrl = LoopControl::Return;
                         }
                     }
+                }
+
+                if in_pause {
+                    time::sleep(Duration::milliseconds(1).to_dur()).await;
+                } else {
+                    break;
                 }
             }
         }
@@ -149,6 +164,12 @@ impl TaskRunner {
                     self.ret_value = Some(ret);
                 }
             }
+            AstStmt::FinishTime(expr) => {
+                let dt = self.eval_expr(expr).await.as_datetime();
+                if let Some(shadow) = self.task_val_shadow.as_mut() {
+                    _ = shadow.result_tx.send(TaskReply::TaskProgress(dt));
+                }
+            }
             AstStmt::For(for_stmt) => match for_stmt.iter_items {
                 AstExpr::Index(index_expr) => {
                     let left = match index_expr.left {
@@ -170,7 +191,7 @@ impl TaskRunner {
                         self.sub_level();
                     }
                 }
-                _ => todo!(),
+                _ => unreachable!(),
             },
             AstStmt::If(if_stmt) => {
                 let mut is_cond = false;
@@ -185,12 +206,6 @@ impl TaskRunner {
                 if !is_cond && if_stmt.stmtss.len() > if_stmt.con_exprs.len() {
                     self.eval_stmts(if_stmt.stmtss.last().unwrap().clone())
                         .await;
-                }
-            }
-            AstStmt::Report(expr) => {
-                let expr = self.eval_expr(expr).await;
-                if let Some(shadow) = self.task_val_shadow.as_mut() {
-                    _ = shadow.result_tx.send(TaskReply::TaskProgress(expr));
                 }
             }
             AstStmt::Return(expr) => {

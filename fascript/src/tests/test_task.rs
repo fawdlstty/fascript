@@ -1,5 +1,4 @@
 use crate::tests::test_utils::TestUtils;
-use std::{thread, time::Duration};
 
 #[test]
 fn test_retry() {

@@ -71,7 +71,7 @@ NameExpr                  = { Ids }
 Expr                      = { (NameExpr ~ AssignOp)* ~ MiddleExpr }
 
 LoopLabel      = { Id }
-CmdStmtName    = { "return" | "abort" | "report" }
+CmdStmtName    = { "return" | "abort" | "finish_time" }
 CmdStmt        = { CmdStmtName ~ (MiddleExpr)? }
 ForStmt        = { (LoopLabel ~ ":")? ~ "for" ~ Id ~ "in" ~ (IndexExpr | MiddleExpr) ~ QHUA_L ~ Stmts ~ QHUA_R }
 IfPart         = { "if" ~ MiddleExpr ~ QHUA_L ~ Stmts ~ QHUA_R }

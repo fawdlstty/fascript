@@ -24,7 +24,7 @@ pub enum TaskResult {
 
 pub enum TaskReply {
     TaskResult(TaskResult),
-    TaskProgress(FasValue),
+    TaskProgress(NaiveDateTime),
 }
 
 #[derive(Clone, Debug)]
@@ -322,35 +322,55 @@ impl GetAstTypeTrait for &str {
 
 // // future    ?Sized + Future + Unpin
 
-// async fn async_value(value: FasValue) -> FasValue {
-//     value
-// }
-
-// impl<Tp: Into<FasValue>, T: Future<Output = Tp>> From<FasValue> for T {
-//     fn from(val: FasValue) -> T {
+// impl<T> From<FasValue> for dyn Future<Output = T>
+// where
+//     T: Into<FasValue>,
+//     dyn Future<Output = T>: Sized,
+// {
+//     fn from(val: FasValue) -> Self {
 //         if let FasValue::Future(fut) = val {
-//             let handle = tokio::task::spawn(async move {
+//             async fn _async_wrap(fut: Receiver<FasValue>) -> FasValue {
 //                 loop {
 //                     match fut.try_recv() {
 //                         Ok(val) => return val,
-//                         Err(_) => time::sleep(Duration::milliseconds(1)).await,
+//                         Err(_) => tokio::time::sleep(Duration::milliseconds(1).to_dur()).await,
 //                     }
 //                 }
-//             });
-//             task::block_in_place(handle)
+//             }
+//             let ret = _async_wrap(fut);
+//             ret
 //         } else {
-//             async_value(val)
+//             async fn async_value(value: FasValue) -> FasValue {
+//                 value
+//             }
+//             let ret = async_value(val);
+//             ret
 //         }
 //     }
 // }
 
-// impl<Tp: Into<FasValue>, T: Future<Output = Tp>> From<T> for FasValue {
-//     fn from(val: T) -> FasValue {
-//         FasValue::None
+// //unsafe impl<T> Send for dyn Future<Output = T> where T: Into<FasValue> {}
+
+// impl<T> From<dyn Future<Output = T>> for FasValue
+// where
+//     T: Into<FasValue> + Sized,
+//     dyn Future<Output = T>: Sized + Send,
+//     T: 'static,
+// {
+//     fn from(val: dyn Future<Output = T>) -> FasValue {
+//         let (cx, rx) = crossbeam::channel::unbounded();
+//         tokio::task::spawn(async move {
+//             let val = val.await.into();
+//             _ = cx.send(val);
+//         });
+//         FasValue::Future(rx)
 //     }
 // }
 
-// impl<Tp: Into<FasValue>, T: Future<Output = Tp>> GetAstTypeTrait for T {
+// impl<T> GetAstTypeTrait for dyn Future<Output = T>
+// where
+//     T: Into<FasValue>,
+// {
 //     fn get_ast_type() -> AstType {
 //         AstType::Future
 //     }

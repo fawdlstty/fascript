@@ -1,12 +1,13 @@
-use crate::ast::exprs::AstExpr;
 use crate::ast::stmts::AstStmt;
 use crate::ast::types::AstType;
 use crate::ast::ParseExt;
 use crate::ast::PestApiExt;
 use crate::ast::Rule;
 use crate::FasCallable;
-use chrono::Duration;
 use std::fmt::Debug;
+
+use super::anno::AstAnnoPart;
+use super::anno::AstAnnoParts;
 
 pub enum AstFunc {
     NativeFunc(Box<dyn FasCallable>),
@@ -125,59 +126,17 @@ impl ParseExt for FasTask {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct AstAnnoPart {
-    pub anno_type: String,
-    pub anno_expr: AstExpr,
-}
-
-unsafe impl Send for AstAnnoPart {}
-
-impl ParseExt for AstAnnoPart {
-    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
-        let mut anno_type = "".to_string();
-        let mut anno_expr = AstExpr::None;
-        for root_item in root.into_inner() {
-            match root_item.as_rule() {
-                Rule::Id => {
-                    anno_type = root_item.get_id();
-                    if !vec![
-                        "atomic",
-                        "on_pause",
-                        "on_resume",
-                        "on_abort",
-                        "on_abort_retry_count",
-                        "on_abort_retry_interval",
-                    ]
-                    .contains(&&anno_type[..])
-                    {
-                        panic!()
-                    }
-                }
-                Rule::MiddleExpr => {
-                    let expr = AstExpr::parse_middle_expr(root_item);
-                    if expr.0.len() + expr.2.len() > 0 {
-                        panic!()
-                    }
-                    anno_expr = expr.1;
-                }
-                _ => unreachable!(),
-            }
-        }
-        AstAnnoPart {
-            anno_type,
-            anno_expr,
-        }
-    }
-}
-
 impl FasFunc {
-    pub fn parse_lambda(root: pest::iterators::Pair<'_, Rule>) -> Self {
-        let mut _func = FasFunc {
+    pub fn new() -> Self {
+        FasFunc {
             name: "".to_string(),
             arg_names: vec![],
             body_stmts: vec![],
-        };
+        }
+    }
+
+    pub fn parse_lambda(root: pest::iterators::Pair<'_, Rule>) -> Self {
+        let mut _func = Self::new();
         for root_item in root.into_inner() {
             match root_item.as_rule() {
                 Rule::Id => {
@@ -189,79 +148,5 @@ impl FasFunc {
             }
         }
         _func
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct AstAnnoParts {
-    pub annos: Vec<AstAnnoPart>,
-}
-
-unsafe impl Send for AstAnnoParts {}
-
-impl AstAnnoParts {
-    pub fn new() -> AstAnnoParts {
-        AstAnnoParts { annos: vec![] }
-    }
-
-    pub fn push(&mut self, anno: AstAnnoPart) {
-        self.annos.push(anno);
-    }
-
-    pub fn get_cancel_expr(&mut self) -> Option<AstExpr> {
-        for anno in self.annos.iter() {
-            if &anno.anno_type == "on_cancel" {
-                return Some(anno.anno_expr.clone());
-            }
-        }
-        None
-    }
-
-    pub fn get_rollback_expr(&mut self) -> Option<AstExpr> {
-        for anno in self.annos.iter() {
-            if &anno.anno_type == "on_rollback" {
-                return Some(anno.anno_expr.clone());
-            }
-        }
-        None
-    }
-
-    pub fn get_abort_expr(&mut self) -> AbortProc {
-        let mut proc = AbortProc::new();
-        for anno in self.annos.iter_mut() {
-            if &anno.anno_type == "on_abort" {
-                proc.on_abort = Some(anno.anno_expr.clone());
-            } else if &anno.anno_type == "on_abort_retry_count" {
-                proc.retry_count = Some(anno.anno_expr.clone());
-            } else if &anno.anno_type == "on_abort_retry_interval" {
-                proc.retry_interval = Some(anno.anno_expr.clone());
-            }
-        }
-        proc
-    }
-
-    pub fn is_atomic(&self) -> bool {
-        for anno in self.annos.iter() {
-            if &anno.anno_type == "atomic" {
-                return true;
-            }
-        }
-        false
-    }
-}
-
-pub struct AbortProc {
-    pub retry_count: Option<AstExpr>,
-    pub retry_interval: Option<AstExpr>,
-    pub on_abort: Option<AstExpr>,
-}
-
-impl AbortProc {
-    pub fn new() -> AbortProc {
-        AbortProc {
-            retry_count: None,
-            retry_interval: None,
-            on_abort: None,
-        }
     }
 }

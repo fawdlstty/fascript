@@ -31,9 +31,9 @@ pub enum AstStmt {
     DefVar(AstDefVarStmt),
     DoWhile(AstDoWhileStmt),
     Expr(AstExpr),
+    FinishTime(AstExpr),
     For(AstForStmt),
     If(AstIfStmt),
-    Report(AstExpr),
     Return(AstExpr),
     While(AstWhileStmt),
 }
@@ -85,7 +85,7 @@ impl Parse3Ext for AstStmt {
                     }
                     stmts.push(match &cmd_name[..] {
                         "abort" => AstStmt::Abort(payload_expr),
-                        "report" => AstStmt::Report(payload_expr),
+                        "finish_time" => AstStmt::FinishTime(payload_expr),
                         "return" => AstStmt::Return(payload_expr),
                         _ => unreachable!(),
                     });
