@@ -1,0 +1,17 @@
+@on_abort_retry_count = 3
+@on_abort_retry_interval = 100.millisec
+task retry_func() {
+    os.println("on task")
+    abort
+}
+var t = retry_func()
+await(50.millisec) t
+os.println("on main1")
+await(100.millisec) t
+os.println("on main2")
+await(100.millisec) t
+os.println("on main3")
+await(100.millisec) t
+os.println("on main4")
+await(100.millisec) t
+os.println("on main5")

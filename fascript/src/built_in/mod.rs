@@ -34,12 +34,12 @@ impl BuiltIn {
     }
 
     pub fn access_type_member(obj_type: AstType, member_name: &str) -> FasValue {
-        match obj_type.get_str() {
-            "int" => {
+        match obj_type {
+            AstType::Int => {
                 let binding = ModuleTypeInt::make();
                 binding.get(member_name).unwrap().clone()
             }
-            "float" => {
+            AstType::Float => {
                 let binding = ModuleTypeFloat::make();
                 binding.get(member_name).unwrap().clone()
             }

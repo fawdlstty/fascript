@@ -1,13 +1,14 @@
+use super::anno::AstAnnoPart;
+use super::anno::AstAnnoParts;
 use crate::ast::stmts::AstStmt;
 use crate::ast::types::AstType;
 use crate::ast::ParseExt;
 use crate::ast::PestApiExt;
 use crate::ast::Rule;
 use crate::FasCallable;
+use lazy_static::lazy_static;
 use std::fmt::Debug;
-
-use super::anno::AstAnnoPart;
-use super::anno::AstAnnoParts;
+use std::sync::Mutex;
 
 pub enum AstFunc {
     NativeFunc(Box<dyn FasCallable>),
@@ -29,7 +30,11 @@ impl AstFunc {
     }
 
     pub fn get_type(&self) -> AstType {
-        AstType::Func(self.get_arg_count())
+        match self {
+            AstFunc::NativeFunc(nfunc) => nfunc.get_type(),
+            AstFunc::FasFunc(func) => func.get_type(),
+            AstFunc::FasTask(task) => task.get_type(),
+        }
     }
 
     pub fn get_arg_count(&self) -> usize {
@@ -74,7 +79,9 @@ impl Debug for AstFunc {
 #[derive(Clone, Debug)]
 pub struct FasFunc {
     pub name: String,
+    pub arg_types: Vec<AstType>,
     pub arg_names: Vec<String>,
+    pub ret_type: AstType,
     pub body_stmts: Vec<AstStmt>,
 }
 
@@ -83,39 +90,12 @@ impl ParseExt for FasFunc {
         let mut _func = FasFunc {
             name: "".to_string(),
             arg_names: vec![],
+            arg_types: vec![],
+            ret_type: AstType::Any,
             body_stmts: vec![],
         };
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::Id => _func.name = root_item.get_id(),
-                Rule::Args => _func.arg_names = root_item.get_ids(),
-                Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
-                _ => unreachable!(),
-            }
-        }
-        _func
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct FasTask {
-    pub annos: AstAnnoParts,
-    pub name: String,
-    pub arg_names: Vec<String>,
-    pub body_stmts: Vec<AstStmt>,
-}
-
-impl ParseExt for FasTask {
-    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
-        let mut _func = FasTask {
-            annos: AstAnnoParts::new(),
-            name: "".to_string(),
-            arg_names: vec![],
-            body_stmts: vec![],
-        };
-        for root_item in root.into_inner() {
-            match root_item.as_rule() {
-                Rule::AnnoPart => _func.annos.push(AstAnnoPart::parse(root_item)),
                 Rule::Id => _func.name = root_item.get_id(),
                 Rule::Args => _func.arg_names = root_item.get_ids(),
                 Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
@@ -130,8 +110,10 @@ impl FasFunc {
     pub fn new() -> Self {
         FasFunc {
             name: "".to_string(),
+            arg_types: vec![],
             arg_names: vec![],
             body_stmts: vec![],
+            ret_type: AstType::Any,
         }
     }
 
@@ -149,4 +131,51 @@ impl FasFunc {
         }
         _func
     }
+
+    fn get_type(&self) -> AstType {
+        AstType::Func((Box::new(self.ret_type.clone()), self.arg_types.clone()))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct FasTask {
+    pub annos: AstAnnoParts,
+    pub name: String,
+    pub arg_types: Vec<AstType>,
+    pub arg_names: Vec<String>,
+    pub ret_type: AstType,
+    pub body_stmts: Vec<AstStmt>,
+}
+
+impl ParseExt for FasTask {
+    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
+        let mut _func = FasTask {
+            annos: AstAnnoParts::new(),
+            name: "".to_string(),
+            arg_types: vec![],
+            arg_names: vec![],
+            body_stmts: vec![],
+            ret_type: AstType::Any,
+        };
+        for root_item in root.into_inner() {
+            match root_item.as_rule() {
+                Rule::AnnoPart => _func.annos.push(AstAnnoPart::parse(root_item)),
+                Rule::Id => _func.name = root_item.get_id(),
+                Rule::Args => _func.arg_names = root_item.get_ids(),
+                Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
+                _ => unreachable!(),
+            }
+        }
+        _func
+    }
+}
+
+impl FasTask {
+    fn get_type(&self) -> AstType {
+        AstType::Func((Box::new(self.ret_type.clone()), self.arg_types.clone()))
+    }
+}
+
+lazy_static! {
+    static ref ENTRY_INC: Mutex<i32> = Mutex::new(0);
 }

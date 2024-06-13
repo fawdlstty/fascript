@@ -308,7 +308,9 @@ impl TaskRunner {
                 self.call_func(*func.func, invoke_expr.arguments.clone())
                     .await
             }
-            _ => todo!(),
+            _ => {
+                todo!()
+            }
         }
     }
 
@@ -404,7 +406,7 @@ impl TaskRunner {
             runner.add_level_invoke(&task.arg_names, args.clone()).await;
             let abort_proc = runner.annos.get_abort_expr();
             let mut on_abort_retry_count = match abort_proc.retry_count {
-                Some(retry_count) => runner.eval_expr(retry_count).await.as_int(),
+                Some(retry_count) => runner.eval_expr(retry_count).await.as_int() - 1,
                 None => 0,
             };
             let on_abort_retry_interval = match abort_proc.retry_interval {

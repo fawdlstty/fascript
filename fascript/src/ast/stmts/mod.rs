@@ -1,12 +1,10 @@
-mod break_stmt;
-mod continue_stmt;
-mod dec_var_stmt;
-mod do_while_stmt;
-mod for_stmt;
-mod if_stmt;
-mod while_stmt;
-
-use core::panic;
+pub mod break_stmt;
+pub mod continue_stmt;
+pub mod dec_var_stmt;
+pub mod do_while_stmt;
+pub mod for_stmt;
+pub mod if_stmt;
+pub mod while_stmt;
 
 use self::break_stmt::AstBreakStmt;
 use self::continue_stmt::AstContinueStmt;
@@ -22,6 +20,7 @@ use super::Parse3Ext;
 use super::ParseExt;
 use super::Rule;
 use crate::ast::exprs::func_expr::AstFuncExpr;
+use core::panic;
 
 #[derive(Clone, Debug)]
 pub enum AstStmt {
@@ -106,14 +105,20 @@ impl Parse3Ext for AstStmt {
                 Rule::ForStmt => AstForStmt::parse(root_item),
                 Rule::FuncStmt => {
                     let func = AstFunc::parse(root_item);
-                    let stmt =
-                        AstDefVarStmt::new(func.get_name(), AstExpr::Func(AstFuncExpr::new(func)));
+                    let stmt = AstDefVarStmt::new(
+                        Some(func.get_type()),
+                        func.get_name(),
+                        AstExpr::Func(AstFuncExpr::new(func)),
+                    );
                     vec![stmt]
                 }
                 Rule::TaskStmt => {
                     let func = AstFunc::parse(root_item);
-                    let stmt =
-                        AstDefVarStmt::new(func.get_name(), AstExpr::Func(AstFuncExpr::new(func)));
+                    let stmt = AstDefVarStmt::new(
+                        Some(func.get_type()),
+                        func.get_name(),
+                        AstExpr::Func(AstFuncExpr::new(func)),
+                    );
                     vec![stmt]
                 }
                 Rule::IfStmt => AstIfStmt::parse(root_item),

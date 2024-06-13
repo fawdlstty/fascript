@@ -316,7 +316,7 @@ impl AstExpr {
     pub fn get_type(&self) -> AstType {
         match self {
             AstExpr::None => AstType::None,
-            AstExpr::Await(_) => AstType::Future,
+            AstExpr::Await(expr) => AstType::Future(Box::new(expr.value.get_type())),
             AstExpr::Func(func_expr) => func_expr.func.get_type(),
             AstExpr::Index(_) => AstType::Index,
             AstExpr::Invoke(_) => AstType::Any,

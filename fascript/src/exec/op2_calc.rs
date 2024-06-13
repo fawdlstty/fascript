@@ -9,7 +9,7 @@ impl Op2Calc {
         match (left_type, right_type) {
             (AstType::None, _) => todo!(),
             (_, AstType::None) => todo!(),
-            (AstType::Array, AstType::Array) => {
+            (AstType::Array(ty1), AstType::Array(ty2)) => {
                 Self::calc_array(left.as_array(), op, right.as_array())
             }
             (AstType::Bool, AstType::Bool) => Self::calc_bool(left.as_bool(), op, right.as_bool()),

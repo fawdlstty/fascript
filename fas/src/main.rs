@@ -6,8 +6,11 @@ use std::io::{Read, Write};
 
 /// Host program for the fascript language runtime
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None, disable_version_flag = true)]
 struct Args {
+    #[arg(short = 'v', short_alias = 'V', long, action = clap::builder::ArgAction::Version)]
+    version: (),
+
     /// Path of the *.fas file
     #[arg(short, long, default_value_t = String::from(""))]
     path: String,
@@ -30,6 +33,7 @@ async fn main() {
     if path.is_empty() {
         // [cmd] cargo run
         println!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+        runtime.set_func("my_println", |value: String| println!("{}", value));
         loop {
             let mut code_str = get_input(">>> ");
             if code_str.len() == 0 {
@@ -62,5 +66,4 @@ async fn main() {
         drop(file);
         _ = runtime.run(&code_str).await;
     }
-    ////runtime.set_func("my_println", |value: String| println!("{}", value));
 }

@@ -92,20 +92,25 @@ impl Eq for FasValue {}
 impl FasValue {
     pub fn get_type(&self) -> AstType {
         match self {
-            FasValue::Array(_) => AstType::Array,
+            FasValue::Array(arr) => {
+                if arr.len() == 0 {
+                    panic!();
+                }
+                arr[0].get_type()
+            }
             FasValue::Bool(_) => AstType::Bool,
             FasValue::DateTime(_) => AstType::DateTime,
             FasValue::Float(_) => AstType::Float,
             FasValue::Func(f) => f.func.get_type(),
-            FasValue::IMap(_) => AstType::IMap,
+            FasValue::IMap(_) => AstType::Map((Box::new(AstType::Int), Box::new(AstType::Any))),
             FasValue::Int(_) => AstType::Int,
             FasValue::None => AstType::Void,
-            FasValue::SMap(_) => AstType::SMap,
+            FasValue::SMap(_) => AstType::Map((Box::new(AstType::String), Box::new(AstType::Any))),
             FasValue::String(_) => AstType::String,
             FasValue::Task(_) => AstType::Task,
             FasValue::TaskResult(_) => AstType::TaskResult,
             FasValue::TimeSpan(_) => AstType::TimeSpan,
-            FasValue::Future(_) => AstType::Future,
+            FasValue::Future(_) => AstType::Future(Box::new(AstType::Any)),
         }
     }
 
@@ -230,16 +235,16 @@ impl FasValue {
             match dest_type {
                 AstType::None => FasValue::None,
                 AstType::Any => self.clone(),
-                AstType::Array => FasValue::Array(self.as_array()),
+                AstType::Array(_) => FasValue::Array(self.as_array()),
                 AstType::Bool => self.as_bool().into(),
                 AstType::DateTime => self.clone(),
                 AstType::Float => self.as_float().into(),
                 AstType::Func(_) => todo!(),
-                AstType::Future => FasValue::Future(self.as_future()),
+                AstType::Future(_) => FasValue::Future(self.as_future()),
                 AstType::Index => unreachable!(),
                 AstType::Int => self.as_int().into(),
-                AstType::IMap => todo!(),
-                AstType::SMap => todo!(),
+                AstType::Map(_) => todo!(),
+                AstType::Option(_) => todo!(),
                 AstType::String => self.as_str().into(),
                 AstType::TimeSpan => self.clone(),
                 AstType::Tuple(_) => todo!(),

@@ -26,14 +26,14 @@ Literal       =  { NullLiteral | NumberLiteral | BoolLiteral | StringLiteral }
 Id  = @{ CHAR ~ NCHAR* }
 Ids =  { (Id ~ ".")* ~ Id }
 
-// MapType     = { "map" ~ (QJIAN_L ~ Type ~ COMMA ~ Type ~ QJIAN_R)? }
-// TupleType   = { QYUAN_L ~ (Type ~ COMMA)+ ~ Type ~ QYUAN_R }
-// FuncType    = { "func" ~ QJIAN_L ~ (Type ~ COMMA)* ~ Type ~ QJIAN_R }
-// BaseTypeStr = { "bool" | "dynamic" | "float" | "int" | "string" | "task" }
-// BaseType    = { BaseTypeStr | MapType | TupleType | FuncType }
-// VoidType    = { "void" }
-// TypeSuffix  = { "[]" | "?" }
-// Type        = { VoidType | (BaseType ~ TypeSuffix*) }
+MapType     = { "map" ~ QJIAN_L ~ Type ~ COMMA ~ Type ~ QJIAN_R }
+TupleType   = { QYUAN_L ~ (Type ~ COMMA)+ ~ Type ~ QYUAN_R }
+FuncType    = { "func" ~ QJIAN_L ~ ((Type ~ COMMA)* ~ Type)? ~ QJIAN_R }
+BaseTypeStr = { "any" | "bool" | "float" | "int" | "string" | "datetime" | "timespan" }
+BaseType    = { BaseTypeStr | MapType | TupleType | FuncType }
+VoidType    = { "void" }
+TypeSuffix  = { "[]" | "?" }
+Type        = { VoidType | (BaseType ~ TypeSuffix*) }
 
 Expr1                     = { BaseExpr }
 Expr2                     = { BaseExpr }
@@ -82,7 +82,7 @@ ContinueStmt   = { "continue" ~ (Id)? }
 DoWhileStmt    = { "do" ~ QHUA_L ~ Stmts ~ QHUA_R ~ "while" ~ MiddleExpr }
 WhileStmt      = { "while" ~ MiddleExpr ~ QHUA_L ~ Stmts ~ QHUA_R }
 DefVarItemPart = { Id ~ "=" ~ MiddleExpr }
-DefVarStmt     = { "var" ~ DefVarItemPart ~ ("," ~ DefVarItemPart)* }
+DefVarStmt     = { (Type | "var") ~ DefVarItemPart ~ ("," ~ DefVarItemPart)* }
 ExprStmt       = { Expr }
 FuncStmt       = { "func" ~ Id ~ Args ~ FuncBody }
 AnnoPart       = { "@" ~ Id ~ "=" ~ MiddleExpr ~ LINE }

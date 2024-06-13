@@ -1,6 +1,7 @@
 pub mod ast;
 pub mod built_in;
 pub mod exec;
+pub mod translate_ast;
 pub mod utils;
 
 #[cfg(test)]
@@ -16,8 +17,28 @@ pub struct FasRuntime {
     runner: TaskRunner,
 }
 
+struct MyState {
+    name: String,
+    count: usize,
+}
+
 impl FasRuntime {
     pub fn new() -> FasRuntime {
+        // let engine = wasmtime::Engine::default();
+        // let module = wasmtime::Module::from_file(&engine, "examples/hello.wat").unwrap();
+        // let mut store = wasmtime::Store::new(
+        //     &engine,
+        //     MyState {
+        //         name: "hello, world!".to_string(),
+        //         count: 0,
+        //     },
+        // );
+        // let hello_func =
+        //     wasmtime::Func::wrap(&mut store, |mut caller: wasmtime::Caller<'_, MyState>| {
+        //         println!("Calling back...");
+        //         println!("> {}", caller.data().name);
+        //         caller.data_mut().count += 1;
+        //     });
         let base = RuntimeBase::new();
         FasRuntime {
             runner: TaskRunner::new(base),

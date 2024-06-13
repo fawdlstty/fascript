@@ -1,6 +1,7 @@
 use crate::ast::blocks::func::AstFunc;
 use crate::ast::exprs::func_expr::AstFuncExpr;
 use crate::ast::exprs::value_expr::{FasValue, GetAstTypeTrait};
+use crate::ast::types::AstType;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
@@ -9,6 +10,7 @@ pub trait FasCallable: Send + Sync {
     fn clone_(&self) -> Box<dyn FasCallable + 'static>;
     fn to_fas_value(self, func_name: String) -> FasValue;
     fn get_arg_count(&self) -> usize;
+    fn get_type(&self) -> AstType;
 }
 
 pub trait FasToWrapper<T> {
@@ -60,6 +62,10 @@ macro_rules! FasWrapper {
 
             fn get_arg_count(&self) -> usize {
                 0
+            }
+
+            fn get_type(&self) -> AstType {
+                AstType::Func((Box::new(R::get_ast_type()), vec![]))
             }
         }
 
@@ -114,6 +120,12 @@ macro_rules! FasWrapper {
 
             fn get_arg_count(&self) -> usize {
 				calc_arg_count!($($name1)*)
+            }
+
+            fn get_type(&self) -> AstType {
+                AstType::Func((Box::new(R::get_ast_type()), vec![
+                    $($name1::get_ast_type()),*
+                ]))
             }
         }
 
