@@ -1,6 +1,6 @@
 use crate::ast::{
     blocks::func::*,
-    exprs::{value_expr::FasValue, AstExpr},
+    exprs::{temp_expr::AstTempExpr, value_expr::FasValue, AstExpr},
     stmts::{break_stmt::AstBreakStmt, dec_var_stmt::AstDefVarStmt, if_stmt::AstIfStmt, AstStmt},
 };
 
@@ -46,9 +46,9 @@ impl CalcTypeData {
 }
 
 impl AstStmt {
-    fn calc_type_get_vars(self, mut data: &mut CalcTypeData) -> Result<Vec<Self>, String> {
+    fn calc_type_get_vars(self, data: &mut CalcTypeData) -> Result<Vec<Self>, String> {
         match self {
-            AstStmt::Abort(expr) => match expr.calc_type_get_vars() {
+            AstStmt::Abort(expr) => match expr.calc_type_get_vars(data) {
                 Ok((pre_stmts, expr, post_stmts)) => {
                     let mut ret = vec![];
                     ret.extend(pre_stmts);
@@ -69,7 +69,8 @@ impl AstStmt {
             AstStmt::DefVar(stmt) => {
                 let mut stmts = vec![];
                 for var_part in stmt.def_vars {
-                    let (pre_stmts, expr, post_stmts) = var_part.init_value.calc_type_get_vars()?;
+                    let (pre_stmts, expr, post_stmts) =
+                        var_part.init_value.calc_type_get_vars(data)?;
                     let default_type = var_part.var_otype.unwrap_or(expr.get_type());
                     stmts.extend(pre_stmts);
                     stmts.push(AstDefVarStmt::new(
@@ -82,10 +83,10 @@ impl AstStmt {
                 Ok(stmts)
             }
             AstStmt::DoWhile(mut stmt) => {
-                let (pre_stmts, expr, post_stmts) = stmt.cond_expr.calc_type_get_vars()?;
+                let (pre_stmts, expr, post_stmts) = stmt.cond_expr.calc_type_get_vars(data)?;
                 let mut tmp_stmts = vec![];
                 for stmt in stmt.stmts {
-                    let stmt_items = stmt.calc_type_get_vars(&mut data)?;
+                    let stmt_items = stmt.calc_type_get_vars(data)?;
                     tmp_stmts.extend(stmt_items);
                 }
                 stmt.stmts = tmp_stmts;
@@ -107,16 +108,35 @@ impl AstStmt {
                 }
                 Ok(vec![AstStmt::DoWhile(stmt)])
             }
-            AstStmt::Expr(expr) => todo!(),
+            AstStmt::Expr(expr) => {
+                let (pre_stmts, expr, post_stmts) = expr.calc_type_get_vars(data)?;
+                let mut tmp_stmts = vec![];
+                tmp_stmts.extend(pre_stmts);
+                tmp_stmts.push(AstStmt::Expr(expr));
+                tmp_stmts.extend(post_stmts);
+                Ok(tmp_stmts)
+            }
             AstStmt::FinishTime(stmt) => todo!(),
             AstStmt::For(stmt) => todo!(),
             AstStmt::If(stmt) => todo!(),
-            AstStmt::Return(stmt) => todo!(),
+            AstStmt::Return(expr) => {
+                let (pre_stmts, expr, post_stmts) = expr.calc_type_get_vars(data)?;
+                let mut tmp_stmts = vec![];
+                tmp_stmts.extend(pre_stmts);
+                tmp_stmts.push(AstDefVarStmt::new(
+                    Some(expr.get_type()),
+                    "__ret".to_string(),
+                    expr,
+                ));
+                tmp_stmts.extend(post_stmts);
+                tmp_stmts.push(AstStmt::Return(AstTempExpr::new("__ret".to_string())));
+                Ok(tmp_stmts)
+            }
             AstStmt::While(mut stmt) => {
-                let (pre_stmts, expr, post_stmts) = stmt.cond_expr.calc_type_get_vars()?;
+                let (pre_stmts, expr, post_stmts) = stmt.cond_expr.calc_type_get_vars(data)?;
                 let mut tmp_stmts = vec![];
                 for stmt in stmt.stmts {
-                    let stmt_items = stmt.calc_type_get_vars(&mut data)?;
+                    let stmt_items = stmt.calc_type_get_vars(data)?;
                     tmp_stmts.extend(stmt_items);
                 }
                 stmt.cond_expr = expr;
@@ -136,7 +156,10 @@ impl AstStmt {
 }
 
 impl AstExpr {
-    fn calc_type_get_vars(self) -> Result<(Vec<AstStmt>, AstExpr, Vec<AstStmt>), String> {
+    fn calc_type_get_vars(
+        self,
+        data: &mut CalcTypeData,
+    ) -> Result<(Vec<AstStmt>, AstExpr, Vec<AstStmt>), String> {
         // TODO
         panic!()
     }

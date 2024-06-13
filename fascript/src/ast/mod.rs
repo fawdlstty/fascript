@@ -6,6 +6,7 @@ pub mod types;
 use self::stmts::AstStmt;
 pub use pest::Parser;
 pub use pest_derive::Parser;
+use types::AstType;
 
 #[derive(Parser)]
 #[grammar = "../fa.pest"]
@@ -17,7 +18,8 @@ pub trait FromStringExt: Sized {
 
 pub trait PestApiExt {
     fn get_id(self) -> String;
-    fn get_ids(self) -> Vec<String>;
+    fn get_type_id(self) -> (AstType, String);
+    fn get_type_ids(self) -> (Vec<AstType>, Vec<String>);
 }
 
 impl PestApiExt for pest::iterators::Pair<'_, Rule> {
@@ -39,15 +41,33 @@ impl PestApiExt for pest::iterators::Pair<'_, Rule> {
         }
     }
 
-    fn get_ids(self) -> Vec<String> {
-        let mut names = vec![];
+    fn get_type_id(self) -> (AstType, String) {
+        let mut type_ = AstType::Any;
+        let mut name_ = "".to_string();
         for root_item in self.into_inner() {
             match root_item.as_rule() {
-                Rule::Id => names.push(root_item.get_id()),
+                Rule::Type => type_ = AstType::parse(root_item),
+                Rule::Id => name_ = root_item.get_id(),
                 _ => unreachable!(),
             }
         }
-        names
+        (type_, name_)
+    }
+
+    fn get_type_ids(self) -> (Vec<AstType>, Vec<String>) {
+        let mut types = vec![];
+        let mut names = vec![];
+        for root_item in self.into_inner() {
+            match root_item.as_rule() {
+                Rule::TypeIdPair => {
+                    let (type_, name_) = root_item.get_type_id();
+                    types.push(type_);
+                    names.push(name_);
+                }
+                _ => unreachable!(),
+            }
+        }
+        (types, names)
     }
 }
 

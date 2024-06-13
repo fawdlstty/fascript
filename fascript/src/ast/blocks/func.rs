@@ -89,15 +89,15 @@ impl ParseExt for FasFunc {
     fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let mut _func = FasFunc {
             name: "".to_string(),
-            arg_names: vec![],
             arg_types: vec![],
+            arg_names: vec![],
             ret_type: AstType::Any,
             body_stmts: vec![],
         };
         for root_item in root.into_inner() {
             match root_item.as_rule() {
                 Rule::Id => _func.name = root_item.get_id(),
-                Rule::Args => _func.arg_names = root_item.get_ids(),
+                Rule::Args => (_func.arg_types, _func.arg_names) = root_item.get_type_ids(),
                 Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
                 _ => unreachable!(),
             }
@@ -124,7 +124,7 @@ impl FasFunc {
                 Rule::Id => {
                     _func.arg_names.push(root_item.get_id());
                 }
-                Rule::Args => _func.arg_names = root_item.get_ids(),
+                Rule::Args => (_func.arg_types, _func.arg_names) = root_item.get_type_ids(),
                 Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
                 _ => unreachable!(),
             }
@@ -161,7 +161,7 @@ impl ParseExt for FasTask {
             match root_item.as_rule() {
                 Rule::AnnoPart => _func.annos.push(AstAnnoPart::parse(root_item)),
                 Rule::Id => _func.name = root_item.get_id(),
-                Rule::Args => _func.arg_names = root_item.get_ids(),
+                Rule::Args => (_func.arg_types, _func.arg_names) = root_item.get_type_ids(),
                 Rule::FuncBody => _func.body_stmts = AstStmt::parse_stmts(root_item),
                 _ => unreachable!(),
             }

@@ -38,7 +38,8 @@ Type        = { VoidType | (BaseType ~ TypeSuffix*) }
 Expr1                     = { BaseExpr }
 Expr2                     = { BaseExpr }
 IndexExpr                 = { Expr1? ~ ".." ~ Expr2? }
-Args                      = { QYUAN_L ~ ((Id ~ COMMA)? ~ Id)? ~ QYUAN_R }
+TypeIdPair                = { Type? ~ Id }
+Args                      = { QYUAN_L ~ ((TypeIdPair ~ COMMA)? ~ TypeIdPair)? ~ QYUAN_R }
 FuncBody                  = { ("=>" ~ Expr) | (QHUA_L ~ Stmts ~ QHUA_R) }
 LambdaExpr                = { (Id | Args) ~ FuncBody }
 NewExpr                   = { QHUA_L ~ TuplePair ~ (COMMA ~ TuplePair)* ~ QHUA_R }
@@ -88,6 +89,6 @@ FuncStmt       = { "func" ~ Id ~ Args ~ FuncBody }
 AnnoPart       = { "@" ~ Id ~ "=" ~ MiddleExpr ~ LINE }
 TaskStmt       = { AnnoPart* ~ "task" ~ Id ~ Args ~ FuncBody }
 Stmt           = { FuncStmt | TaskStmt | CmdStmt | ForStmt | IfStmt | BreakStmt | ContinueStmt | DoWhileStmt | WhileStmt | DefVarStmt | ExprStmt }
-Stmts          = { LINE? ~ (Stmt ~ LINE)* ~ Stmt? ~ LINE? }
+Stmts          = { (Stmt ~ LINE)* ~ Stmt? ~ LINE? }
 
-ProgramFile = { SOI ~ Stmts ~ EOI }
+ProgramFile = { SOI ~ LINE? ~ Stmts ~ EOI }

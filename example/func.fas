@@ -1,0 +1,6 @@
+func test_func(string s) {
+    return s
+}
+
+string s = test_func("hello world")
+os.println(s)

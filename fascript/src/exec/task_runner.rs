@@ -404,16 +404,16 @@ impl TaskRunner {
 
             // get degradation info
             runner.add_level_invoke(&task.arg_names, args.clone()).await;
-            let abort_proc = runner.annos.get_abort_expr();
-            let mut on_abort_retry_count = match abort_proc.retry_count {
+            let retry_proc = runner.annos.get_retry_expr();
+            let mut on_abort_retry_count = match retry_proc.retry_count {
                 Some(retry_count) => runner.eval_expr(retry_count).await.as_int() - 1,
                 None => 0,
             };
-            let on_abort_retry_interval = match abort_proc.retry_interval {
+            let on_abort_retry_interval = match retry_proc.retry_interval {
                 Some(retry_interval) => runner.eval_expr(retry_interval).await.as_timespan(),
                 None => Duration::seconds(0),
             };
-            let on_abort = abort_proc.on_abort;
+            let on_abort = runner.annos.get_cancel_expr();
             runner.sub_level();
 
             while on_abort_retry_count >= 0 {

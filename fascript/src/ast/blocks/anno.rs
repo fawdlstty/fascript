@@ -3,18 +3,16 @@ use crate::ast::ParseExt;
 use crate::ast::PestApiExt;
 use crate::ast::Rule;
 
-pub struct AbortProc {
+pub struct RetryProc {
     pub retry_count: Option<AstExpr>,
     pub retry_interval: Option<AstExpr>,
-    pub on_abort: Option<AstExpr>,
 }
 
-impl AbortProc {
-    pub fn new() -> AbortProc {
-        AbortProc {
+impl RetryProc {
+    pub fn new() -> RetryProc {
+        RetryProc {
             retry_count: None,
             retry_interval: None,
-            on_abort: None,
         }
     }
 }
@@ -22,13 +20,14 @@ impl AbortProc {
 #[derive(Clone, Debug)]
 pub enum AstAnnoPart {
     Atomic,
-    OnAbort(AstExpr),
     OnAbortRetryCount(AstExpr),
     OnAbortRetryInterval(AstExpr),
     OnCancel(AstExpr),
+    OnFailure(AstExpr),
     OnPause(AstExpr),
     OnResume(AstExpr),
     OnRollback(AstExpr),
+    OnSuccess(AstExpr),
     RemainingTime(AstExpr),
 }
 
@@ -53,7 +52,6 @@ impl ParseExt for AstAnnoPart {
         }
         match &anno_type[..] {
             "atomic" => AstAnnoPart::Atomic,
-            "on_abort" => AstAnnoPart::OnAbort(anno_expr),
             "on_abort_retry_count" => AstAnnoPart::OnAbortRetryCount(anno_expr),
             "on_abort_retry_interval" => AstAnnoPart::OnAbortRetryInterval(anno_expr),
             "on_cancel" => AstAnnoPart::OnCancel(anno_expr),
@@ -91,12 +89,10 @@ impl AstAnnoParts {
         false
     }
 
-    pub fn get_abort_expr(&mut self) -> AbortProc {
-        let mut proc = AbortProc::new();
+    pub fn get_retry_expr(&mut self) -> RetryProc {
+        let mut proc = RetryProc::new();
         for anno in self.annos.iter_mut() {
-            if let AstAnnoPart::OnAbort(expr) = anno {
-                proc.on_abort = Some(expr.clone());
-            } else if let AstAnnoPart::OnAbortRetryCount(expr) = anno {
+            if let AstAnnoPart::OnAbortRetryCount(expr) = anno {
                 proc.retry_count = Some(expr.clone());
             } else if let AstAnnoPart::OnAbortRetryInterval(expr) = anno {
                 proc.retry_interval = Some(expr.clone());

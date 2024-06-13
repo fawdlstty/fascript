@@ -58,7 +58,7 @@ async fn main() {
             }
         }
     } else {
-        // [cmd] cargo run -- --path a.fas
+        // [cmd] cargo run -- --path example/task.fas
         let mut file = File::open(&path).expect("open file failed");
         let mut code_str = String::new();
         file.read_to_string(&mut code_str)
