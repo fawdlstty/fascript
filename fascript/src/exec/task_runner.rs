@@ -414,10 +414,9 @@ impl TaskRunner {
                 _ => panic!(),
             },
             false => {
-                // let func = BuiltIn::access_type_member(left.get_type(), &op1_expr.op);
-                // let invoke = AstInvokeExpr::new(AstExpr::Value(func), vec![AstExpr::Value(left)]);
-                // self.eval_expr(invoke).await
-                todo!()
+                let func = BuiltIn::access_type_member(left.get_type(), &op1_expr.op);
+                let invoke = AstInvokeExpr::new(AstExpr::Value(func), vec![AstExpr::Value(left)]);
+                self.eval_expr(invoke).await
             }
         }
     }

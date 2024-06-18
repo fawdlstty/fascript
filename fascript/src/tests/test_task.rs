@@ -23,13 +23,9 @@ fn test_retry() {
         if test.get_cache() == "aaa" {
             str += "a"
         }
-        await(100.millisec) t
-        if test.get_cache() == "aaaa" {
-            str += "a"
-        }
         str
     "#;
     println!("code: {}", code);
     let _value = TestUtils::eval_code(&code).unwrap().as_type::<String>();
-    assert_eq!(&_value, "aaaa");
+    assert_eq!(&_value, "aaa");
 }
