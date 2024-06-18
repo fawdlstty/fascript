@@ -16,6 +16,6 @@ fn test_op4() {
             "/" => a / b,
             _ => panic!(),
         };
-        assert_eq!(value.as_int(), value2);
+        assert_eq!(value.as_type::<i64>(), value2);
     }
 }

@@ -53,7 +53,7 @@ async fn main() {
             let oval = runtime.run(&code_str).await;
             if let Some(val) = oval {
                 if val != FasValue::None {
-                    println!("{}", val.as_str());
+                    println!("{}", val.as_type::<String>());
                 }
             }
         }

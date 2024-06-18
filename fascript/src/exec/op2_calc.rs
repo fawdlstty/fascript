@@ -10,21 +10,27 @@ impl Op2Calc {
             (AstType::None, _) => todo!(),
             (_, AstType::None) => todo!(),
             (AstType::Array(ty1), AstType::Array(ty2)) => {
-                Self::calc_array(left.as_array(), op, right.as_array())
+                let left = left.as_type::<Vec<FasValue>>();
+                let right = right.as_type::<Vec<FasValue>>();
+                Self::calc_array(left, op, right)
             }
-            (AstType::Bool, AstType::Bool) => Self::calc_bool(left.as_bool(), op, right.as_bool()),
+            (AstType::Bool, AstType::Bool) => {
+                Self::calc_bool(left.as_type::<bool>(), op, right.as_type::<bool>())
+            }
             (AstType::Float, AstType::Float) => {
-                Self::calc_float(left.as_float(), op, right.as_float())
+                Self::calc_float(left.as_type::<f64>(), op, right.as_type::<f64>())
             }
             (AstType::Float, AstType::Int) => {
-                Self::calc_float(left.as_float(), op, right.as_float())
+                Self::calc_float(left.as_type::<f64>(), op, right.as_type::<f64>())
             }
             (AstType::Int, AstType::Float) => {
-                Self::calc_float(left.as_float(), op, right.as_float())
+                Self::calc_float(left.as_type::<f64>(), op, right.as_type::<f64>())
             }
-            (AstType::Int, AstType::Int) => Self::calc_int(left.as_int(), op, right.as_int()),
+            (AstType::Int, AstType::Int) => {
+                Self::calc_int(left.as_type::<i64>(), op, right.as_type::<i64>())
+            }
             (AstType::String, AstType::String) => {
-                Self::calc_string(left.as_str(), op, right.as_str())
+                Self::calc_string(left.as_type::<String>(), op, right.as_type::<String>())
             }
             (AstType::Void, _) if op == "??" => right,
             (_, _) => todo!(),

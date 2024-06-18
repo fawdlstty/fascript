@@ -1,4 +1,6 @@
+pub mod array_expr;
 pub mod await_expr;
+pub mod block_expr;
 pub mod func_expr;
 pub mod index_expr;
 pub mod invoke_expr;
@@ -27,11 +29,15 @@ use super::PestApiExt;
 use super::Rule;
 use crate::utils::oper_utils::OperUtils;
 use crate::utils::str_utils::StrUtils;
+use array_expr::AstArrayExpr;
+use block_expr::AstBlockExpr;
 
 #[derive(Clone, Debug)]
 pub enum AstExpr {
     None,
+    Array(AstArrayExpr),
     Await(AstAwaitExpr),
+    Block(AstBlockExpr),
     Func(AstFuncExpr),
     Index(AstIndexExpr),
     Invoke(AstInvokeExpr),
@@ -239,7 +245,7 @@ impl AstExpr {
         (pre_stmts, expr, post_stmts)
     }
 
-    fn parse_base_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
+    pub fn parse_base_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let root_item = root.into_inner().next().unwrap();
         match root_item.as_rule() {
             Rule::Literal => Self::parse_literal_expr(root_item),
@@ -267,6 +273,34 @@ impl AstExpr {
             Rule::StringLiteral => {
                 let str_value = StrUtils::code_to_str(root_item.as_str());
                 AstExpr::Value(FasValue::String(str_value))
+            }
+            Rule::FormatStringLiteral => {
+                let (strs, exprs) = StrUtils::code_to_fmt_strs(root_item);
+                let mut exprs1: Vec<_> = strs
+                    .into_iter()
+                    .map(|str| AstExpr::Value(FasValue::String(str)))
+                    .collect();
+                let exprs2: Vec<_> = exprs
+                    .into_iter()
+                    .map(|expr| {
+                        let func = AstOp1Expr::new(expr, "to_str".to_string(), false);
+                        AstInvokeExpr::new(func, vec![])
+                    })
+                    .collect();
+                let last_str = exprs1.remove(exprs1.len() - 1);
+                let mut exprs: Vec<_> = exprs1
+                    .into_iter()
+                    .zip(exprs2.into_iter())
+                    .flat_map(|(a, b)| vec![a, b])
+                    .collect();
+                exprs.push(last_str);
+                //
+                let func = AstOp1Expr::new(
+                    AstExpr::Value(FasValue::String("".to_string())),
+                    "join".to_string(),
+                    false,
+                );
+                AstInvokeExpr::new(func, exprs)
             }
             _ => unreachable!(),
         }
@@ -316,7 +350,9 @@ impl AstExpr {
     pub fn get_type(&self) -> AstType {
         match self {
             AstExpr::None => AstType::None,
+            AstExpr::Array(_) => todo!(),
             AstExpr::Await(expr) => AstType::Future(Box::new(expr.value.get_type())),
+            AstExpr::Block(_) => todo!(),
             AstExpr::Func(func_expr) => func_expr.func.get_type(),
             AstExpr::Index(_) => AstType::Index,
             AstExpr::Invoke(_) => AstType::Any,

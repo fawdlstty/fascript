@@ -17,11 +17,15 @@ NCHAR      = @{ CHAR | NUM_CHAR }
 NUM_CHAR   = @{ '0'..'9' }
 NUM_BASE   = @{ NUM_CHAR ~ ("_" | NUM_CHAR)* }
 
-NullLiteral   =  { "null" }
-NumberLiteral = @{ "-"? ~ NUM_BASE ~ ("." ~ NUM_BASE)? }
-BoolLiteral   =  { "true" | "false" }
-StringLiteral = @{ "\"" ~ ("\\\"" | (!"\"" ~ ANY))* ~ "\"" }
-Literal       =  { NullLiteral | NumberLiteral | BoolLiteral | StringLiteral }
+NullLiteral         =  { "null" }
+NumberLiteral       = @{ "-"? ~ NUM_BASE ~ ("." ~ NUM_BASE)? }
+BoolLiteral         =  { "true" | "false" }
+StringLiteral       = @{ "\"" ~ ("\\\"" | (!"\"" ~ ANY))* ~ "\"" }
+FmtStringLiteral1   = @{ "$\"" ~ ("\\\"" | (!"{" ~ ANY))* ~ "{" }
+FmtStringLiteral2   = @{ "}" ~ ("\\\"" | (!"{" ~ ANY))* ~ "{" }
+FmtStringLiteral3   = @{ "}" ~ ("\\\"" | (!"\"" ~ ANY))* ~ "\"" }
+FormatStringLiteral =  { FmtStringLiteral1 ~ Expr1 ~ (FmtStringLiteral2 ~ Expr1)* ~ FmtStringLiteral3 }
+Literal             =  { NullLiteral | NumberLiteral | BoolLiteral | StringLiteral | FormatStringLiteral }
 
 Id  = @{ CHAR ~ NCHAR* }
 Ids =  { (Id ~ ".")* ~ Id }

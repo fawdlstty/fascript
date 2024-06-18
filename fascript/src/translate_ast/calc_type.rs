@@ -1,8 +1,12 @@
-use crate::ast::{
-    blocks::func::*,
-    exprs::{temp_expr::AstTempExpr, value_expr::FasValue, AstExpr},
-    stmts::{break_stmt::AstBreakStmt, dec_var_stmt::AstDefVarStmt, if_stmt::AstIfStmt, AstStmt},
-};
+use crate::ast::blocks::func::*;
+use crate::ast::exprs::temp_expr::AstTempExpr;
+use crate::ast::exprs::value_expr::FasValue;
+use crate::ast::exprs::AstExpr;
+use crate::ast::stmts::break_stmt::AstBreakStmt;
+use crate::ast::stmts::dec_var_stmt::AstDefVarStmt;
+use crate::ast::stmts::if_stmt::AstIfStmt;
+use crate::ast::stmts::AstStmt;
+use crate::utils::str_utils::StrUtils;
 
 impl AstFunc {
     fn calc_type_get_vars(&mut self) -> Result<(), String> {
@@ -123,13 +127,14 @@ impl AstStmt {
                 let (pre_stmts, expr, post_stmts) = expr.calc_type_get_vars(data)?;
                 let mut tmp_stmts = vec![];
                 tmp_stmts.extend(pre_stmts);
+                let var_name = StrUtils::rand_str(8);
                 tmp_stmts.push(AstDefVarStmt::new(
                     Some(expr.get_type()),
-                    "__ret".to_string(),
+                    var_name.clone(),
                     expr,
                 ));
                 tmp_stmts.extend(post_stmts);
-                tmp_stmts.push(AstStmt::Return(AstTempExpr::new("__ret".to_string())));
+                tmp_stmts.push(AstStmt::Return(AstTempExpr::new(var_name)));
                 Ok(tmp_stmts)
             }
             AstStmt::While(mut stmt) => {

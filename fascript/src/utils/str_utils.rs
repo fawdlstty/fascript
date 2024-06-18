@@ -1,3 +1,6 @@
+use crate::ast::{exprs::AstExpr, Rule};
+use rand::{distributions::Alphanumeric, Rng};
+
 enum NextProcessType {
     Normal,
     Escape,
@@ -8,6 +11,15 @@ enum NextProcessType {
 pub struct StrUtils {}
 
 impl StrUtils {
+    pub fn rand_str(length: usize) -> String {
+        let mut rng = rand::thread_rng();
+        let ret: Vec<_> = std::iter::repeat(())
+            .map(|()| rng.sample(Alphanumeric))
+            .take(length)
+            .collect();
+        format!("_{}", String::from_utf8(ret).unwrap_or("a".to_string()))
+    }
+
     pub fn code_to_str(code: &str) -> String {
         const S_HEXSTR: &str = "0123456789ABCDEF0123456789abcdef";
         let code = &code[1..(code.len() - 1)];
@@ -43,5 +55,23 @@ impl StrUtils {
             });
         }
         ret
+    }
+
+    pub fn code_to_fmt_strs(root: pest::iterators::Pair<'_, Rule>) -> (Vec<String>, Vec<AstExpr>) {
+        let mut strs = vec![];
+        let mut exprs = vec![];
+        for root_item in root.into_inner() {
+            match root_item.as_rule() {
+                Rule::FmtStringLiteral1 => strs.push(Self::code_to_str(&root_item.as_str()[1..])),
+                Rule::FmtStringLiteral2 => strs.push(Self::code_to_str(root_item.as_str())),
+                Rule::FmtStringLiteral3 => strs.push(Self::code_to_str(root_item.as_str())),
+                Rule::Expr1 => {
+                    let root_item2 = root_item.into_inner().next().unwrap();
+                    exprs.push(AstExpr::parse_base_expr(root_item2));
+                }
+                _ => unreachable!(),
+            }
+        }
+        (strs, exprs)
     }
 }

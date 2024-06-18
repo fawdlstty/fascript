@@ -1,3 +1,4 @@
+use super::module_type_object::ModuleTypeObject;
 use crate::ast::exprs::value_expr::FasValue;
 use crate::utils::native_func_utils::AddFuncExt;
 use chrono::Duration;
@@ -7,7 +8,7 @@ pub struct ModuleTypeFloat {}
 
 impl ModuleTypeFloat {
     pub fn make() -> HashMap<String, FasValue> {
-        let mut module = HashMap::new();
+        let mut module = ModuleTypeObject::make();
         module.set_func("nanosec", |val: f64| Duration::nanoseconds(val as i64));
         module.set_func("microsec", |val: f64| {
             Duration::nanoseconds((val * 1000.0) as i64)

@@ -30,6 +30,6 @@ fn test_retry() {
         str
     "#;
     println!("code: {}", code);
-    let _value = TestUtils::eval_code(&code).unwrap().as_str();
+    let _value = TestUtils::eval_code(&code).unwrap().as_type::<String>();
     assert_eq!(&_value, "aaaa");
 }

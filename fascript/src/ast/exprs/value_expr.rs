@@ -114,10 +114,20 @@ impl FasValue {
         }
     }
 
-    pub fn as_str(&self) -> String {
-        match self {
+    pub fn as_type<T: AsTypeTrait>(self) -> T {
+        T::as_type(self)
+    }
+}
+
+pub trait AsTypeTrait {
+    fn as_type(val: FasValue) -> Self;
+}
+
+impl AsTypeTrait for String {
+    fn as_type(val: FasValue) -> Self {
+        match val {
             FasValue::Array(v) => {
-                let items: Vec<String> = v.iter().map(|x| x.as_str()).collect();
+                let items: Vec<String> = v.into_iter().map(|x| x.as_type::<String>()).collect();
                 format!("[ {} ]", items.join(", "))
             }
             FasValue::Bool(b) => match b {
@@ -130,7 +140,7 @@ impl FasValue {
             FasValue::IMap(im) => {
                 let items: Vec<String> = im
                     .iter()
-                    .map(|x| format!("{}: {}", x.0, x.1.as_str()))
+                    .map(|x| format!("{}: {}", x.0, x.1.clone().as_type::<String>()))
                     .collect();
                 format!("{{ {} }}", items.join(", "))
             }
@@ -140,7 +150,7 @@ impl FasValue {
             FasValue::SMap(sm) => {
                 let items: Vec<String> = sm
                     .iter()
-                    .map(|x| format!("{}: {}", x.0, x.1.as_str()))
+                    .map(|x| format!("{}: {}", x.0, x.1.clone().as_type::<String>()))
                     .collect();
                 format!("{{ {} }}", items.join(", "))
             }
@@ -150,110 +160,114 @@ impl FasValue {
             FasValue::Future(_) => "(future)".to_string(),
         }
     }
+}
 
-    pub fn as_array(&self) -> Vec<FasValue> {
-        match self {
-            FasValue::Array(arr) => arr.clone(),
+impl AsTypeTrait for Vec<FasValue> {
+    fn as_type(val: FasValue) -> Self {
+        match val {
+            FasValue::Array(arr) => arr,
             _ => unreachable!(),
         }
     }
+}
 
-    pub fn as_bool(&self) -> bool {
-        match self {
-            FasValue::Bool(b) => b.clone(),
+impl AsTypeTrait for Vec<String> {
+    fn as_type(val: FasValue) -> Self {
+        match val {
+            FasValue::Array(arr) => arr.into_iter().map(|x| x.as_type::<String>()).collect(),
             _ => unreachable!(),
         }
     }
+}
 
-    pub fn as_float(&self) -> f64 {
-        match self {
-            FasValue::Float(f) => f.clone(),
-            FasValue::Int(i) => i.clone() as f64,
+impl AsTypeTrait for bool {
+    fn as_type(val: FasValue) -> Self {
+        match val {
+            FasValue::Bool(b) => b,
             _ => unreachable!(),
         }
     }
+}
 
-    pub fn as_future(&self) -> crossbeam::channel::Receiver<FasValue> {
-        match self {
-            FasValue::Future(f) => f.clone(),
+impl AsTypeTrait for f64 {
+    fn as_type(val: FasValue) -> Self {
+        match val {
+            FasValue::Float(f) => f,
+            FasValue::Int(i) => i as f64,
             _ => unreachable!(),
         }
     }
+}
 
-    pub fn as_int(&self) -> i64 {
-        match self {
+impl AsTypeTrait for crossbeam::channel::Receiver<FasValue> {
+    fn as_type(val: FasValue) -> Self {
+        match val {
+            FasValue::Future(f) => f,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl AsTypeTrait for i64 {
+    fn as_type(val: FasValue) -> Self {
+        match val {
             FasValue::Float(f) => f.round() as i64,
-            FasValue::Int(i) => i.clone(),
+            FasValue::Int(i) => i,
             _ => unreachable!(),
         }
     }
+}
 
-    pub fn as_imap(&self) -> HashMap<i64, FasValue> {
-        match self {
-            FasValue::IMap(map) => map.clone(),
+impl AsTypeTrait for HashMap<i64, FasValue> {
+    fn as_type(val: FasValue) -> Self {
+        match val {
+            FasValue::IMap(map) => map,
             _ => unreachable!(),
         }
     }
+}
 
-    pub fn as_smap(&self) -> HashMap<String, FasValue> {
-        match self {
-            FasValue::SMap(map) => map.clone(),
+impl AsTypeTrait for HashMap<String, FasValue> {
+    fn as_type(val: FasValue) -> Self {
+        match val {
+            FasValue::SMap(map) => map,
             _ => unreachable!(),
         }
     }
+}
 
-    pub fn as_datetime(&self) -> NaiveDateTime {
-        match self {
-            FasValue::DateTime(dt) => dt.clone(),
+impl AsTypeTrait for NaiveDateTime {
+    fn as_type(val: FasValue) -> Self {
+        match val {
+            FasValue::DateTime(dt) => dt,
             _ => unreachable!(),
         }
     }
+}
 
-    pub fn as_task(self) -> TaskValue {
-        match self {
+impl AsTypeTrait for TaskValue {
+    fn as_type(val: FasValue) -> Self {
+        match val {
             FasValue::Task(t) => t,
             _ => unreachable!(),
         }
     }
+}
 
-    pub fn as_taskresult(self) -> TaskResult {
-        match self {
+impl AsTypeTrait for TaskResult {
+    fn as_type(val: FasValue) -> Self {
+        match val {
             FasValue::TaskResult(tr) => tr,
             _ => unreachable!(),
         }
     }
+}
 
-    pub fn as_timespan(&self) -> Duration {
-        match self {
-            FasValue::TimeSpan(ts) => ts.clone(),
+impl AsTypeTrait for Duration {
+    fn as_type(val: FasValue) -> Self {
+        match val {
+            FasValue::TimeSpan(ts) => ts,
             _ => unreachable!(),
-        }
-    }
-
-    pub fn as_type(&self, dest_type: AstType) -> FasValue {
-        if self.get_type() != dest_type {
-            match dest_type {
-                AstType::None => FasValue::None,
-                AstType::Any => self.clone(),
-                AstType::Array(_) => FasValue::Array(self.as_array()),
-                AstType::Bool => self.as_bool().into(),
-                AstType::DateTime => self.clone(),
-                AstType::Float => self.as_float().into(),
-                AstType::Func(_) => todo!(),
-                AstType::Future(_) => FasValue::Future(self.as_future()),
-                AstType::Index => unreachable!(),
-                AstType::Int => self.as_int().into(),
-                AstType::Map(_) => todo!(),
-                AstType::Option(_) => todo!(),
-                AstType::String => self.as_str().into(),
-                AstType::TimeSpan => self.clone(),
-                AstType::Tuple(_) => todo!(),
-                AstType::Void => FasValue::None,
-                AstType::Task => todo!(),
-                AstType::TaskResult => todo!(),
-            }
-        } else {
-            self.clone()
         }
     }
 }
@@ -262,46 +276,50 @@ pub trait GetAstTypeTrait {
     fn get_ast_type() -> AstType;
 }
 
+// pub trait MyFrom<T>: Sized {
+//     fn from(value: T) -> Self;
+// }
+
 macro_rules! define_cast {
-    ($type:ty, $v2t:tt, $t2v:tt) => {
+    ($type:ty, $type2:tt) => {
         impl From<FasValue> for $type {
-            fn from(v: FasValue) -> $type {
-                v.$v2t()
+            fn from(v: FasValue) -> Self {
+                v.as_type::<Self>()
             }
         }
 
         impl From<$type> for FasValue {
-            fn from(v: $type) -> FasValue {
-                FasValue::$t2v(v)
+            fn from(v: $type) -> Self {
+                FasValue::$type2(v)
             }
         }
 
         impl GetAstTypeTrait for $type {
             fn get_ast_type() -> AstType {
-                AstType::$t2v
+                AstType::$type2
             }
         }
     };
 }
 
 //define_cast2!((), as_void, None);
-define_cast!(bool, as_bool, Bool);
-define_cast!(f64, as_float, Float);
-define_cast!(i64, as_int, Int);
-define_cast!(String, as_str, String);
-define_cast!(NaiveDateTime, as_datetime, DateTime);
-define_cast!(Duration, as_timespan, TimeSpan);
+define_cast!(bool, Bool);
+define_cast!(f64, Float);
+define_cast!(i64, Int);
+define_cast!(String, String);
+define_cast!(NaiveDateTime, DateTime);
+define_cast!(Duration, TimeSpan);
 
 // void
 
 impl From<FasValue> for () {
-    fn from(_: FasValue) -> () {
+    fn from(_: FasValue) -> Self {
         ()
     }
 }
 
 impl From<()> for FasValue {
-    fn from(_: ()) -> FasValue {
+    fn from(_: ()) -> Self {
         FasValue::None
     }
 }
@@ -315,7 +333,7 @@ impl GetAstTypeTrait for () {
 // &str
 
 impl From<&str> for FasValue {
-    fn from(s: &str) -> FasValue {
+    fn from(s: &str) -> Self {
         FasValue::String(s.into())
     }
 }
@@ -323,6 +341,40 @@ impl From<&str> for FasValue {
 impl GetAstTypeTrait for &str {
     fn get_ast_type() -> AstType {
         AstType::String
+    }
+}
+
+// Array
+
+impl From<FasValue> for Vec<String> {
+    fn from(v: FasValue) -> Self {
+        v.as_type::<Self>()
+    }
+}
+
+impl From<Vec<String>> for FasValue {
+    fn from(v: Vec<String>) -> Self {
+        FasValue::Array(v.into_iter().map(|x| FasValue::String(x)).collect())
+    }
+}
+
+impl GetAstTypeTrait for Vec<String> {
+    fn get_ast_type() -> AstType {
+        AstType::Array(Box::new(AstType::String))
+    }
+}
+
+// FasValue
+
+// impl From<FasValue> for FasValue {
+//     fn from(v: FasValue) -> Self {
+//         v
+//     }
+// }
+
+impl GetAstTypeTrait for FasValue {
+    fn get_ast_type() -> AstType {
+        AstType::Any
     }
 }
 

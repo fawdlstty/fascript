@@ -1,0 +1,2 @@
+string s = $"a {12} c"
+os.println(s)
