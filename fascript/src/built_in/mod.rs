@@ -1,3 +1,5 @@
+mod module_directory;
+mod module_file;
 mod module_os;
 #[cfg(test)]
 mod module_test;
@@ -6,8 +8,6 @@ mod module_type_int;
 mod module_type_object;
 mod module_type_string;
 
-use module_type_string::ModuleTypeString;
-
 use self::module_os::ModuleOs;
 #[cfg(test)]
 use self::module_test::ModuleTest;
@@ -15,12 +15,17 @@ use self::module_type_float::ModuleTypeFloat;
 use self::module_type_int::ModuleTypeInt;
 use crate::ast::exprs::value_expr::FasValue;
 use crate::ast::types::AstType;
+use module_directory::ModuleDirectory;
+use module_file::ModuleFile;
+use module_type_string::ModuleTypeString;
 
 pub struct BuiltIn {}
 
 impl BuiltIn {
     pub fn init_modules() -> Vec<&'static str> {
         vec![
+            "directory",
+            "file",
             "os",
             #[cfg(test)]
             "test",
@@ -29,6 +34,8 @@ impl BuiltIn {
 
     pub fn get_module(name: &str) -> FasValue {
         match name {
+            "directory" => FasValue::SMap(ModuleDirectory::make()),
+            "file" => FasValue::SMap(ModuleFile::make()),
             "os" => FasValue::SMap(ModuleOs::make()),
             #[cfg(test)]
             "test" => FasValue::SMap(ModuleTest::make()),
