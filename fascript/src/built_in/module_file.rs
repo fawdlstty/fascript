@@ -19,10 +19,7 @@ impl ModuleFile {
             fs::read_to_string(path).unwrap_or("".to_string())
         });
         module.set_func("write", |path: String, text: String| {
-            match fs::write(path, text) {
-                Ok(_) => true,
-                Err(_) => false,
-            }
+            fs::write(path, text).is_ok()
         });
         module.set_func(
             "append",
@@ -31,6 +28,10 @@ impl ModuleFile {
                 Err(_) => false,
             },
         );
+        module.set_func("delete", |path: String| {
+            let path = Path::new(&path);
+            fs::remove_file(path).is_ok() || !path.exists()
+        });
         module
     }
 }

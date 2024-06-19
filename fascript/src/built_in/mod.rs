@@ -1,6 +1,7 @@
 mod module_directory;
 mod module_file;
 mod module_os;
+mod module_process;
 #[cfg(test)]
 mod module_test;
 mod module_type_float;
@@ -17,6 +18,7 @@ use crate::ast::exprs::value_expr::FasValue;
 use crate::ast::types::AstType;
 use module_directory::ModuleDirectory;
 use module_file::ModuleFile;
+use module_process::ModuleProcess;
 use module_type_string::ModuleTypeString;
 
 pub struct BuiltIn {}
@@ -27,6 +29,7 @@ impl BuiltIn {
             "directory",
             "file",
             "os",
+            "process",
             #[cfg(test)]
             "test",
         ]
@@ -37,6 +40,7 @@ impl BuiltIn {
             "directory" => FasValue::SMap(ModuleDirectory::make()),
             "file" => FasValue::SMap(ModuleFile::make()),
             "os" => FasValue::SMap(ModuleOs::make()),
+            "process" => FasValue::SMap(ModuleProcess::make()),
             #[cfg(test)]
             "test" => FasValue::SMap(ModuleTest::make()),
             _ => unreachable!(),

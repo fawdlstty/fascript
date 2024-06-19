@@ -11,6 +11,10 @@ impl ModuleDirectory {
             path.exists() && path.is_dir()
         });
         module.set_func("create", |path: String| fs::create_dir_all(path).is_ok());
+        module.set_func("delete", |path: String| {
+            let path = Path::new(&path);
+            fs::remove_dir_all(&path).is_ok() || !path.exists()
+        });
         module
     }
 }
