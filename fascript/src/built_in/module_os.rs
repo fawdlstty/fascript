@@ -1,4 +1,5 @@
-use crate::{ast::exprs::value_expr::FasValue, utils::native_func_utils::AddFuncExt};
+use crate::ast::exprs::value_expr::FasValue;
+use crate::utils::native_func_utils::AddFuncExt;
 use std::collections::HashMap;
 
 pub struct ModuleOs {}

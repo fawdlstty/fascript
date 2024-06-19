@@ -1,10 +1,9 @@
-use crate::{ast::exprs::value_expr::FasValue, utils::native_func_utils::AddFuncExt};
-use std::{
-    collections::HashMap,
-    fs::{self, OpenOptions},
-    io::Write,
-    path::Path,
-};
+use crate::ast::exprs::value_expr::FasValue;
+use crate::utils::native_func_utils::AddFuncExt;
+use std::collections::HashMap;
+use std::fs;
+use std::io::Write;
+use std::path::Path;
 
 pub struct ModuleFile {}
 
@@ -23,7 +22,7 @@ impl ModuleFile {
         });
         module.set_func(
             "append",
-            |path: String, text: String| match OpenOptions::new().append(true).open(path) {
+            |path: String, text: String| match fs::OpenOptions::new().append(true).open(path) {
                 Ok(mut file) => file.write_all(text.as_bytes()).is_ok(),
                 Err(_) => false,
             },
