@@ -24,13 +24,7 @@ impl AstIfStmt {
         let mut stmts = vec![];
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::MiddleExpr => {
-                    let expr = AstExpr::parse_middle_expr(root_item);
-                    if expr.0.len() + expr.2.len() > 0 {
-                        panic!()
-                    }
-                    condition_expr = expr.1;
-                }
+                Rule::MiddleExpr => condition_expr = AstExpr::parse_middle_expr(root_item),
                 Rule::Stmts => stmts = AstStmt::parse_stmts(root_item),
                 _ => unreachable!(),
             }

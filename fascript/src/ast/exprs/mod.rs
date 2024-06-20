@@ -50,9 +50,7 @@ pub enum AstExpr {
 }
 
 impl AstExpr {
-    pub fn parse_middle_expr(
-        root: pest::iterators::Pair<'_, Rule>,
-    ) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
+    pub fn parse_middle_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let root = root.into_inner().next().unwrap();
         match root.as_rule() {
             Rule::AwaitExpr => {
@@ -69,20 +67,11 @@ impl AstExpr {
                         _ => unreachable!(),
                     }
                 }
-                let mut pre_stmts = vec![];
-                let mut post_stmts = vec![];
                 let value_expr = value_expr.unwrap();
-                pre_stmts.extend(value_expr.0);
-                post_stmts.extend(value_expr.2);
-                let expr = match await_expr {
-                    Some(await_expr) => {
-                        pre_stmts.extend(await_expr.0);
-                        post_stmts.extend(await_expr.2);
-                        AstAwaitExpr::new(Some(await_expr.1), value_expr.1)
-                    }
-                    None => AstAwaitExpr::new(None, value_expr.1),
-                };
-                (pre_stmts, expr, post_stmts)
+                match await_expr {
+                    Some(await_expr) => AstAwaitExpr::new(Some(await_expr), value_expr),
+                    None => AstAwaitExpr::new(None, value_expr),
+                }
             }
             Rule::Middle3OpExpr => Self::parse_op3_expr(root),
             Rule::Middle2OpExpr => Self::parse_op2_expr(root),
@@ -90,50 +79,38 @@ impl AstExpr {
         }
     }
 
-    fn parse_op3_expr(root: pest::iterators::Pair<'_, Rule>) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
+    fn parse_op3_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let mut exprs = vec![];
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::StrongExpr => {
-                    let expr = Self::parse_strong_expr(root_item);
-                    if expr.0.len() + expr.2.len() > 0 {
-                        panic!()
-                    }
-                    exprs.push(expr.1);
-                }
+                Rule::StrongExpr => exprs.push(Self::parse_strong_expr(root_item)),
                 _ => unreachable!(),
             }
         }
-        let expr = AstExpr::Switch(AstSwitchExpr {
+        AstExpr::Switch(AstSwitchExpr {
             expr: Box::new(exprs.remove(0)),
             conds: vec![
                 AstExpr::Value(FasValue::Bool(true)),
                 AstExpr::Value(FasValue::Bool(false)),
             ],
             values: exprs,
-        });
-        (vec![], expr, vec![])
+        })
     }
 
-    fn parse_op2_expr(root: pest::iterators::Pair<'_, Rule>) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
-        let mut pre_stmts = vec![];
-        let mut post_stmts = vec![];
+    fn parse_op2_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let mut exprs = vec![];
         let mut ops = vec![];
         for root_item in root.into_inner() {
             match root_item.as_rule() {
                 Rule::StrongExpr => {
                     let expr = AstExpr::parse_strong_expr(root_item);
-                    pre_stmts.extend(expr.0);
-                    exprs.push(expr.1);
-                    post_stmts.extend(expr.2);
+                    exprs.push(expr);
                 }
                 Rule::CalcOp => ops.push(root_item.as_str().to_string()),
                 _ => unreachable!(),
             }
         }
-        let expr = Self::parse_op2_expr_impl(&mut exprs, &mut ops);
-        (pre_stmts, expr, post_stmts)
+        Self::parse_op2_expr_impl(&mut exprs, &mut ops)
     }
 
     fn parse_op2_expr_impl(exprs: &mut [AstExpr], ops: &mut [String]) -> AstExpr {
@@ -157,9 +134,7 @@ impl AstExpr {
         }
     }
 
-    fn parse_strong_expr(
-        root: pest::iterators::Pair<'_, Rule>,
-    ) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
+    fn parse_strong_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let mut pre_stmts = vec![];
         let mut post_stmts = vec![];
         let mut prefixs = vec![];
@@ -176,10 +151,7 @@ impl AstExpr {
                     //
                 }
                 Rule::BaseExpr => oexpr = Some(AstExpr::parse_base_expr(root_item)),
-                Rule::BaseExprSuffix => {
-                    let suffix_ctx = root_item.into_inner().next().unwrap();
-                    suffix_ctxs.push(suffix_ctx);
-                }
+                Rule::BaseExprSuffix => suffix_ctxs.push(root_item.into_inner().next().unwrap()),
                 _ => unreachable!(),
             }
         }
@@ -227,9 +199,7 @@ impl AstExpr {
                 }
                 Rule::BaseExprSuffixInvoke => {
                     let args = Self::parse_exprs(suffix_ctx);
-                    pre_stmts.extend(args.0);
-                    expr = AstInvokeExpr::new(expr, args.1);
-                    post_stmts.extend(args.2);
+                    expr = AstInvokeExpr::new(expr, args);
                 }
                 Rule::BaseExprSuffixArrayAccess => unreachable!(),
                 Rule::BaseExprSuffixAccess => {
@@ -242,7 +212,11 @@ impl AstExpr {
                 _ => unreachable!(),
             }
         }
-        (pre_stmts, expr, post_stmts)
+        if pre_stmts.len() > 0 || post_stmts.len() > 0 {
+            // use AstBlockExpr
+            todo!()
+        }
+        expr
     }
 
     pub fn parse_base_expr(root: pest::iterators::Pair<'_, Rule>) -> Self {
@@ -252,7 +226,7 @@ impl AstExpr {
             Rule::NewExpr => unreachable!(),
             Rule::LambdaExpr => AstExpr::Func(AstFuncExpr::new(AstFunc::parse_lambda(root_item))),
             Rule::TupleExpr => unreachable!(),
-            Rule::QuotExpr => unreachable!(),
+            Rule::QuotExpr => Self::parse(root_item.into_inner().next().unwrap()),
             Rule::Id => AstTempExpr::new(root_item.get_id()),
             Rule::ArrayExpr => unreachable!(),
             _ => unreachable!(),
@@ -327,24 +301,15 @@ impl AstExpr {
         AstExpr::Index(index_expr)
     }
 
-    fn parse_exprs(
-        root: pest::iterators::Pair<'_, Rule>,
-    ) -> (Vec<AstStmt>, Vec<Self>, Vec<AstStmt>) {
-        let mut pre_stmts = vec![];
-        let mut post_stmts = vec![];
+    fn parse_exprs(root: pest::iterators::Pair<'_, Rule>) -> Vec<Self> {
         let mut exprs = vec![];
         for root_item in root.into_inner() {
             match root_item.as_rule() {
-                Rule::Expr => {
-                    let expr = Self::parse(root_item);
-                    pre_stmts.extend(expr.0);
-                    exprs.push(expr.1);
-                    post_stmts.extend(expr.2);
-                }
+                Rule::Expr => exprs.push(Self::parse(root_item)),
                 _ => unreachable!(),
             }
         }
-        (pre_stmts, exprs, post_stmts)
+        exprs
     }
 
     pub fn get_type(&self) -> AstType {
@@ -367,7 +332,7 @@ impl AstExpr {
 }
 
 impl Parse2Ext for AstExpr {
-    fn parse(root: pest::iterators::Pair<'_, Rule>) -> (Vec<AstStmt>, Self, Vec<AstStmt>) {
+    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self {
         let mut name_exprs = vec![];
         let mut assign_ops = vec![];
         let mut middle_expr = None;
@@ -385,11 +350,8 @@ impl Parse2Ext for AstExpr {
                 Some(middle_expr) => middle_expr,
                 None => unreachable!(),
             };
-            middle_expr = Some((right.0, AstOp2Expr::new(left, op, right.1), right.2));
+            middle_expr = Some(AstOp2Expr::new(left, op, right));
         }
-        match middle_expr {
-            Some(middle_expr) => middle_expr,
-            None => unreachable!(),
-        }
+        middle_expr.unwrap()
     }
 }

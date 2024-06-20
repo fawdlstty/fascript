@@ -44,14 +44,7 @@ impl AstStmt {
             match root_item.as_rule() {
                 Rule::Stmts => return Self::parse_stmts(root_item),
                 Rule::Stmt => stmts.extend(AstStmt::parse(root_item)),
-                Rule::Expr => {
-                    let expr = AstExpr::parse(root_item);
-                    if expr.2.len() > 0 {
-                        panic!();
-                    }
-                    stmts.extend(expr.0);
-                    stmts.push(AstStmt::Return(expr.1));
-                }
+                Rule::Expr => stmts.push(AstStmt::Return(AstExpr::parse(root_item))),
                 _ => unreachable!(),
             }
         }
@@ -65,30 +58,23 @@ impl Parse3Ext for AstStmt {
             Some(root_item) => match root_item.as_rule() {
                 Rule::BreakStmt => vec![AstStmt::Break(AstBreakStmt::parse(root_item))],
                 Rule::CmdStmt => {
-                    let mut stmts = vec![];
                     let mut cmd_name = "".to_string();
                     let mut payload_expr = AstExpr::None;
                     for cmd_item in root_item.into_inner() {
                         match cmd_item.as_rule() {
                             Rule::CmdStmtName => cmd_name = cmd_item.as_str().to_string(),
                             Rule::MiddleExpr => {
-                                let expr = AstExpr::parse_middle_expr(cmd_item);
-                                if expr.2.len() > 0 {
-                                    panic!()
-                                }
-                                stmts.extend(expr.0);
-                                payload_expr = expr.1;
+                                payload_expr = AstExpr::parse_middle_expr(cmd_item);
                             }
                             _ => unreachable!(),
                         }
                     }
-                    stmts.push(match &cmd_name[..] {
+                    vec![match &cmd_name[..] {
                         "abort" => AstStmt::Abort(payload_expr),
                         "finish_time" => AstStmt::FinishTime(payload_expr),
                         "return" => AstStmt::Return(payload_expr),
                         _ => unreachable!(),
-                    });
-                    stmts
+                    }]
                 }
                 Rule::ContinueStmt => vec![AstStmt::Continue(AstContinueStmt::parse(root_item))],
                 Rule::DoWhileStmt => AstDoWhileStmt::parse(root_item),
@@ -96,11 +82,7 @@ impl Parse3Ext for AstStmt {
                 Rule::DefVarStmt => AstDefVarStmt::parse(root_item),
                 Rule::ExprStmt => {
                     let expr = AstExpr::parse(root_item.into_inner().next().unwrap());
-                    let mut stmts = vec![];
-                    stmts.extend(expr.0);
-                    stmts.push(AstStmt::Expr(expr.1));
-                    stmts.extend(expr.2);
-                    stmts
+                    vec![AstStmt::Expr(expr)]
                 }
                 Rule::ForStmt => AstForStmt::parse(root_item),
                 Rule::FuncStmt => {

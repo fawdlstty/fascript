@@ -1,2 +1,2 @@
-string s = $"a {12} c"
+string s = $"a {(6+6)} c"
 os.println(s)

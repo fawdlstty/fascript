@@ -31,8 +31,6 @@ impl AstDefVarStmt {
 impl Parse3Ext for AstDefVarStmt {
     fn parse(root: pest::iterators::Pair<'_, Rule>) -> Vec<AstStmt> {
         let mut var_otype = None;
-        let mut pre_stmts = vec![];
-        let mut post_stmts = vec![];
         let mut stmt = AstDefVarStmt { def_vars: vec![] };
         for root_item in root.into_inner() {
             match root_item.as_rule() {
@@ -45,9 +43,7 @@ impl Parse3Ext for AstDefVarStmt {
                             Rule::Id => var_name = def_var_item.as_str(),
                             Rule::MiddleExpr => {
                                 let expr = AstExpr::parse_middle_expr(def_var_item);
-                                pre_stmts.extend(expr.0);
-                                init_value = expr.1;
-                                post_stmts.extend(expr.2);
+                                init_value = expr;
                             }
                             _ => unreachable!(),
                         }
@@ -64,8 +60,6 @@ impl Parse3Ext for AstDefVarStmt {
                 }
             }
         }
-        pre_stmts.push(AstStmt::DefVar(stmt));
-        pre_stmts.extend(post_stmts);
-        pre_stmts
+        vec![AstStmt::DefVar(stmt)]
     }
 }

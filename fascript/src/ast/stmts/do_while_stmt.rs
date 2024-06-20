@@ -22,32 +22,16 @@ impl AstDoWhileStmt {
 
 impl Parse3Ext for AstDoWhileStmt {
     fn parse(root: pest::iterators::Pair<'_, Rule>) -> Vec<AstStmt> {
-        let mut pre_stmts = vec![];
-        let mut post_stmts = vec![];
         let mut do_while_stmt = AstDoWhileStmt::new();
         for root_item in root.into_inner() {
             match root_item.as_rule() {
                 Rule::LoopLabel => do_while_stmt.label = root_item.as_str().to_string(),
-                Rule::MiddleExpr => {
-                    let expr = AstExpr::parse_middle_expr(root_item);
-                    pre_stmts.extend(expr.0);
-                    do_while_stmt.cond_expr = expr.1;
-                    post_stmts.extend(expr.2);
-                }
+                Rule::MiddleExpr => do_while_stmt.cond_expr = AstExpr::parse_middle_expr(root_item),
                 Rule::Stmts => do_while_stmt.stmts = AstStmt::parse_stmts(root_item),
                 _ => unreachable!(),
             }
         }
         //
-        do_while_stmt.stmts.extend(pre_stmts.clone());
-        for post_stmt in post_stmts.iter().enumerate() {
-            do_while_stmt.stmts.insert(post_stmt.0, post_stmt.1.clone());
-        }
-        //
-        let mut stmts = vec![];
-        stmts.extend(pre_stmts);
-        stmts.push(AstStmt::DoWhile(do_while_stmt));
-        stmts.extend(post_stmts);
-        stmts
+        vec![AstStmt::DoWhile(do_while_stmt)]
     }
 }

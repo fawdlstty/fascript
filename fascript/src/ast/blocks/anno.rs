@@ -40,13 +40,7 @@ impl ParseExt for AstAnnoPart {
         for root_item in root.into_inner() {
             match root_item.as_rule() {
                 Rule::Id => anno_type = root_item.get_id(),
-                Rule::MiddleExpr => {
-                    let expr = AstExpr::parse_middle_expr(root_item);
-                    if expr.0.len() + expr.2.len() > 0 {
-                        panic!()
-                    }
-                    anno_expr = expr.1;
-                }
+                Rule::MiddleExpr => anno_expr = AstExpr::parse_middle_expr(root_item),
                 _ => unreachable!(),
             }
         }

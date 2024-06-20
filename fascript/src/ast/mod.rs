@@ -76,7 +76,7 @@ pub trait ParseExt {
 }
 
 pub trait Parse2Ext {
-    fn parse(root: pest::iterators::Pair<'_, Rule>) -> (Vec<AstStmt>, Self, Vec<AstStmt>)
+    fn parse(root: pest::iterators::Pair<'_, Rule>) -> Self
     where
         Self: Sized;
 }
